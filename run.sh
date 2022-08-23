@@ -24,10 +24,7 @@ if [ "$1" = "create" ]; then
 elif [[ "$1" = "preprocess" ]]; then
  $PYTHON_VERSION /content/debruits/src/$PREPROCESS_PY $BRIGHTNESS $CONTRAST $BLUR $SATURATION
 elif [[ "$1" = "train" ]]; then
- cd debruitssenv
- source bin/activate
- $PYTHON_VERSION $TRAIN_PY $N_EPOCHS
- deactivate
+ $PYTHON_VERSION /content/debruits/src/$TRAIN_PY $N_EPOCHS
 elif [[ "$1" = "inference" ]]; then
  cd debruitssenv
  source bin/activate
