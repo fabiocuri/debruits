@@ -1,4 +1,5 @@
 import glob
+import sys
 
 import cv2
 from numpy import asarray, savez_compressed
@@ -8,15 +9,22 @@ from tqdm import tqdm
 from handlers import ImageClass
 
 
-def frames2canny(mode, paths):
+def effects_and_canny(mode, paths):
 
     """
 
-    Creates canny edges from the frames.
+    Adjusts brightness, contrast and creates canny edges.
 
     """
 
-    print(f"{mode} - Creating canny edges...")
+    BRIGHTNESS = int(list(sys.argv)[-4])
+    CONTRAST = int(list(sys.argv)[-3])
+    BLUR = int(list(sys.argv)[-2])
+    SATURATION = int(list(sys.argv)[-1])
+
+    print(
+        f"{mode} - Adjusting brightness, contrast, blurring, saturation and creating canny edges..."
+    )
 
     for file in tqdm(glob.glob(f"{paths['frames']}/{mode}/*")):
 
@@ -24,6 +32,9 @@ def frames2canny(mode, paths):
         imagehandler.read_image()
         imagehandler.resize((256, 256))
         imagehandler.get_image_name()
+        imagehandler.brightness_contrast(BRIGHTNESS, CONTRAST)
+        imagehandler.blur(BLUR)
+        imagehandler.saturation(SATURATION)
         imagehandler.export_image(output_path=f"{paths['resized']}/{mode}")
         imagehandler.edges_canny()
         imagehandler.export_image(output_path=f"{paths['edges']}/{mode}")
@@ -91,7 +102,7 @@ def load_images(mode, paths):
 
 def preprocess4GAN(mode, paths):
 
-    frames2canny(mode=mode, paths=paths)
+    effects_and_canny(mode=mode, paths=paths)
 
     concat2model(mode=mode, paths=paths)
 

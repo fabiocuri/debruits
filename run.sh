@@ -1,6 +1,10 @@
 #!/bin/sh
 N_EPOCHS=2
 N_SUPER_RESOLUTION=1
+BRIGHTNESS=1
+CONTRAST=10
+BLUR=10
+SATURATION=3
 PYTHON_VERSION=python3
 PIP_VERSION=pip3
 PREPROCESS_PY="preprocess.py"
@@ -22,7 +26,7 @@ if [ "$1" = "create" ]; then
 elif [[ "$1" = "preprocess" ]]; then
  cd debruitssenv
  source bin/activate
- $PYTHON_VERSION $PREPROCESS_PY
+ $PYTHON_VERSION $PREPROCESS_PY $BRIGHTNESS $CONTRAST $BLUR $SATURATION
  deactivate
 elif [[ "$1" = "train" ]]; then
  cd debruitssenv
