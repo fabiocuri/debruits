@@ -1,7 +1,7 @@
-keras==2.3.0
+opencv-python
 tensorflow
+tqdm
+keras==2.3.0
+PIL
 matplotlib
 moviepy
-ISR
-opencv-python
-numpy

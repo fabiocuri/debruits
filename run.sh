@@ -12,7 +12,6 @@ IMAGE_PROCESSING_PY="image_processing.py"
 
 if [ "$1" = "create" ]; then
  $PIP_VERSION install virtualenv
- cd envs
  virtualenv debruitssenv
  source debruitssenv/bin/activate
  $PIP_VERSION install -r requirements.txt
