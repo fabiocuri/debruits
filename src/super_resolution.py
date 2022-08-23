@@ -5,15 +5,17 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
+from handlers import ImageClass
 from rdn import RDN
 
 if __name__ == "__main__":
 
-    n_loop = int(sys.argv[-1])
+    n_loop = int(sys.argv[-2])
+    path = sys.argv[-1]
 
     rdn = RDN(weights="psnr-small")
 
-    for file in tqdm(glob.glob("../data/output/inference/*")):
+    for file in tqdm(glob.glob(f"{path}/*")):
 
         for _ in range(n_loop):
 
@@ -23,3 +25,11 @@ if __name__ == "__main__":
             sr_img = rdn.predict(lr_img)
             highres_img = Image.fromarray(sr_img)
             highres_img.save(file)
+
+            imagehandler = ImageClass(input_path=file)
+            imagehandler.read_image()
+            imagehandler.resize((1024, 1024))
+            imagehandler.get_image_name()
+            imagehandler.export_image(
+                output_path=file.replace(imagehandler.image_name, "")[:-1], scale=1
+            )

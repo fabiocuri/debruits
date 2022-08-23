@@ -253,8 +253,6 @@ if __name__ == "__main__":
 
     n_epochs = int(list(sys.argv)[-1])
 
-    print(n_epochs)
-
     train_dataset = load_real_samples("../data/input/model/train.npz")
     val_dataset = load_real_samples("../data/input/model/val.npz")
     image_shape = train_dataset[0].shape[1:]

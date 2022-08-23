@@ -22,10 +22,6 @@ def effects_and_canny(mode, paths):
     BLUR = int(list(sys.argv)[-2])
     SATURATION = int(list(sys.argv)[-1])
 
-    print(
-        f"{mode} - Adjusting brightness, contrast, blurring, saturation and creating canny edges..."
-    )
-
     for file in tqdm(glob.glob(f"{paths['frames']}/{mode}/*")):
 
         imagehandler = ImageClass(input_path=file, mode=mode)
@@ -35,9 +31,9 @@ def effects_and_canny(mode, paths):
         imagehandler.brightness_contrast(BRIGHTNESS, CONTRAST)
         imagehandler.blur(BLUR)
         imagehandler.saturation(SATURATION)
-        imagehandler.export_image(output_path=f"{paths['resized']}/{mode}")
+        imagehandler.export_image(output_path=f"{paths['resized']}/{mode}", scale=255)
         imagehandler.edges_canny()
-        imagehandler.export_image(output_path=f"{paths['edges']}/{mode}")
+        imagehandler.export_image(output_path=f"{paths['edges']}/{mode}", scale=1)
 
 
 def concat2model(mode, paths):
@@ -47,8 +43,6 @@ def concat2model(mode, paths):
     Concatenates source and target images.
 
     """
-
-    print(f"{mode} - Concatenating source and target images...")
 
     for file in tqdm(glob.glob(f"{paths['edges']}/{mode}/*")):
 
@@ -67,7 +61,9 @@ def concat2model(mode, paths):
         imagehandler_concat = ImageClass(cv2image=concat_img, mode=mode)
         imagehandler_concat.read_image()
         imagehandler_concat.get_image_name(image_name=image_name)
-        imagehandler_concat.export_image(output_path=f"{paths['model']}/{mode}")
+        imagehandler_concat.export_image(
+            output_path=f"{paths['model']}/{mode}", scale=255
+        )
 
 
 def load_images(mode, paths):
@@ -77,8 +73,6 @@ def load_images(mode, paths):
     Creates train and val zipped data.
 
     """
-
-    print(f"{mode} - Loading images...")
 
     src_list, tar_list = list(), list()
 
@@ -119,7 +113,6 @@ if __name__ == "__main__":
         "resized": f"{input_path}/resized",
         "edges": f"{input_path}/edges",
         "model": f"{input_path}/model",
-        "test": f"{input_path}/test",
     }
 
     preprocess4GAN(mode="train", paths=paths)

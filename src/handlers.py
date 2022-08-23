@@ -142,14 +142,12 @@ class ImageClass:
 
         self.image = cv2.Canny(self.image, 100, 200)
 
-    def export_image(self, output_path):
+    def export_image(self, output_path, scale):
 
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        print("----------------------------")
-        print(f"{output_path}/{self.image_name}")
-
-        cv2.imwrite(f"{output_path}/{self.image_name}.jpg", 255 * self.image)
+        cv2.imwrite(f"{output_path}/{self.image_name}.jpg", scale * self.image)
+        print(self.image.shape)
 
     def imshow(self):
 

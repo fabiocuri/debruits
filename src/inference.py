@@ -20,7 +20,7 @@ def predict(g_model, dataset, paths, mode):
         imagehandler_concat = ImageClass(cv2image=X_fakeB[0], mode=mode)
         imagehandler_concat.read_image()
         imagehandler_concat.get_image_name(image_name=ix)
-        imagehandler_concat.export_image(output_path=f"{paths['inference']}")
+        imagehandler_concat.export_image(output_path=f"{paths['inference']}", scale=255)
 
 
 if __name__ == "__main__":
