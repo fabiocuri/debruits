@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 from matplotlib import pyplot
 from numpy import load, ones, zeros
@@ -244,17 +245,19 @@ def train(
 
             summarize_performance(i, g_model, val_dataset)
 
-    output_path = "../../../data/output/trained_models"
+    output_path = "../data/output/trained_models"
     Path(output_path).mkdir(parents=True, exist_ok=True)
     g_model.save(output_path)
 
 
 if __name__ == "__main__":
 
-    n_epochs = 50
+    n_epochs = int(list(sys.argv)[-1])
 
-    train_dataset = load_real_samples("../../../data/input/model/train.npz")
-    val_dataset = load_real_samples("../../../data/input/model/val.npz")
+    print(n_epochs)
+
+    train_dataset = load_real_samples("../data/input/model/train.npz")
+    val_dataset = load_real_samples("../data/input/model/val.npz")
     image_shape = train_dataset[0].shape[1:]
 
     d_model = define_discriminator(image_shape)

@@ -101,7 +101,7 @@ def preprocess4GAN(mode, paths):
 
 if __name__ == "__main__":
 
-    input_path = "../../../data/input"
+    input_path = "../data/input"
 
     paths = {
         "frames": f"{input_path}/frames",

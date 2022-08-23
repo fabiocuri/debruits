@@ -1,4 +1,6 @@
 import sys
+import glob
+from tqdm import tqdm
 
 import numpy as np
 from PIL import Image
@@ -7,16 +9,17 @@ from rdn import RDN
 
 if __name__ == "__main__":
 
-    image_file = sys.argv[1]
+    n_loop = int(sys.argv[-1])
 
-    # improve resolution 5 times
+    rdn = RDN(weights="psnr-small")
 
-    for _ in range(5):
+    for file in tqdm(glob.glob(f"../data/output/inference/*")):
 
-        img = Image.open(f"../../../data/output/{image_file}")
-        lr_img = np.array(img)
+        for _ in range(n_loop):
 
-        rdn = RDN(weights="psnr-small")
-        sr_img = rdn.predict(lr_img)
-        highres_img = Image.fromarray(sr_img)
-        highres_img.save(f"../../../data/output/{image_file}")
+            img = Image.open(file)
+            lr_img = np.array(img)
+
+            sr_img = rdn.predict(lr_img)
+            highres_img = Image.fromarray(sr_img)
+            highres_img.save(file)

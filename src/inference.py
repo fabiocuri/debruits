@@ -25,11 +25,11 @@ def predict(g_model, dataset, paths, mode):
 
 if __name__ == "__main__":
 
-    input_path = "../../../data/input"
+    input_path = "../data/output"
 
     paths = {"inference": f"{input_path}/inference"}
 
-    inference_dataset = load_real_samples("../../../data/input/model/test.npz")
-    g_model = keras.models.load_model("../../../data/output/trained_models")
+    inference_dataset = load_real_samples("../data/input/model/test.npz")
+    g_model = keras.models.load_model("../data/output/trained_models")
 
     predict(g_model, inference_dataset, paths, mode="test")
