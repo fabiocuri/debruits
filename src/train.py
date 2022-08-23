@@ -1,5 +1,5 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from matplotlib import pyplot
 from numpy import load, ones, zeros
@@ -16,6 +16,7 @@ from tensorflow.keras.layers import (
     LeakyReLU,
 )
 from tensorflow.keras.optimizers import Adam
+from tqdm import tqdm
 
 
 def define_discriminator(image_shape):
@@ -223,9 +224,7 @@ def train(
 
     n_steps = bat_per_epo * n_epochs
 
-    for i in range(n_steps):
-
-        print(f"{n_steps-i} steps left.")
+    for i in tqdm(range(n_steps)):
 
         [X_realA, X_realB], y_real = generate_real_samples(
             train_dataset, n_batch, n_patch

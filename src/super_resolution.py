@@ -1,9 +1,9 @@
-import sys
 import glob
-from tqdm import tqdm
+import sys
 
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
 from rdn import RDN
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     rdn = RDN(weights="psnr-small")
 
-    for file in tqdm(glob.glob(f"../data/output/inference/*")):
+    for file in tqdm(glob.glob("../data/output/inference/*")):
 
         for _ in range(n_loop):
 
