@@ -4,7 +4,7 @@ from pathlib import Path
 from os import listdir
 from numpy import asarray
 from numpy import savez_compressed
-
+from tqdm import tqdm
 import cv2
 import tensorflow
 from tensorflow.keras.preprocessing.image import img_to_array
@@ -21,7 +21,9 @@ def frames2canny(mode, paths):
     
     """
 
-    for file in glob.glob(f"{paths['frames']}/{mode}/*"):
+    print(f"{mode} - Creating canny edges...")
+
+    for file in tqdm(glob.glob(f"{paths['frames']}/{mode}/*")):
 
         imagehandler = ImageClass(input_path=file, mode=mode)
         imagehandler.read_image()
@@ -40,7 +42,9 @@ def concat2model(mode, paths):
     
     """
 
-    for file in glob.glob(f"{paths['edges']}/{mode}/*"):
+    print(f"{mode} - Concatenating source and target images...")
+
+    for file in tqdm(glob.glob(f"{paths['edges']}/{mode}/*")):
     
         image_name = file.split('/')[-1]
     
@@ -67,9 +71,11 @@ def load_images(mode, paths):
     
     """
 
+    print(f"{mode} - Loading images...")
+
     src_list, tar_list = list(), list()
 
-    for file in glob.glob(f"{paths['model']}/{mode}/*"):
+    for file in tqdm(glob.glob(f"{paths['model']}/{mode}/*")):
 
         imagehandler_frame = ImageClass(input_path=file)
         imagehandler_frame.read_image()

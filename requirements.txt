@@ -1,0 +1,7 @@
+keras==2.3.0
+tensorflow
+matplotlib
+moviepy
+ISR
+opencv-python
+numpy
