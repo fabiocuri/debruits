@@ -207,9 +207,9 @@ def summarize_performance(step, g_model, dataset, n_samples=3):
         pyplot.axis("off")
         pyplot.imshow(X_realB[i])
 
-    Path("/content/debruits/plots/").mkdir(parents=True, exist_ok=True)
+    Path("/content/drive/MyDrive/plots/").mkdir(parents=True, exist_ok=True)
 
-    filename1 = "/content/debruits/plots/plot_%06d.png" % (step + 1)
+    filename1 = "/content/drive/MyDrive/plots/plot_%06d.png" % (step + 1)
     pyplot.savefig(filename1)
     pyplot.close()
 
@@ -246,9 +246,8 @@ def train(
 
             summarize_performance(i, g_model, val_dataset)
 
-    output_path = "/content/debruits/data/output/trained_models"
-    Path(output_path).mkdir(parents=True, exist_ok=True)
-    g_model.save(output_path)
+    Path("/content/drive/MyDrive/trained_models/").mkdir(parents=True, exist_ok=True)
+    g_model.save("/content/drive/MyDrive/trained_models/")
 
 
 if __name__ == "__main__":
