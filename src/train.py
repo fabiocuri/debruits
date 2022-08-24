@@ -207,7 +207,7 @@ def summarize_performance(step, g_model, dataset, n_samples=3):
         pyplot.axis("off")
         pyplot.imshow(X_realB[i])
 
-    filename1 = "plot_%06d.png" % (step + 1)
+    filename1 = "/content/debruits/plots/plot_%06d.png" % (step + 1)
     pyplot.savefig(filename1)
     pyplot.close()
 
