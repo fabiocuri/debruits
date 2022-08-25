@@ -207,9 +207,9 @@ def summarize_performance(step, g_model, dataset, n_samples=3):
         pyplot.axis("off")
         pyplot.imshow(X_realB[i])
 
-    Path("/content/drive/MyDrive/plots/").mkdir(parents=True, exist_ok=True)
+    Path("/content/drive/MyDrive/output/plots/").mkdir(parents=True, exist_ok=True)
 
-    filename1 = "/content/drive/MyDrive/plots/plot_%06d.png" % (step + 1)
+    filename1 = "/content/drive/MyDrive/output/plots/plot_%06d.png" % (step + 1)
     pyplot.savefig(filename1)
     pyplot.close()
 
@@ -246,16 +246,16 @@ def train(
 
             summarize_performance(i, g_model, val_dataset)
 
-    Path("/content/drive/MyDrive/trained_models/").mkdir(parents=True, exist_ok=True)
-    g_model.save("/content/drive/MyDrive/trained_models/")
+    Path("/content/drive/MyDrive/output/models/trained_models/").mkdir(parents=True, exist_ok=True)
+    g_model.save("/content/drive/MyDrive/output/models/trained_models/")
 
 
 if __name__ == "__main__":
 
     n_epochs = int(list(sys.argv)[-1])
 
-    train_dataset = load_real_samples("/content/debruits/data/input/model/train.npz")
-    val_dataset = load_real_samples("/content/debruits/data/input/model/val.npz")
+    train_dataset = load_real_samples("/content/drive/MyDrive/input/model/train.npz")
+    val_dataset = load_real_samples("/content/drive/MyDrive/input/model/val.npz")
     image_shape = train_dataset[0].shape[1:]
 
     d_model = define_discriminator(image_shape)
