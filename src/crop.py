@@ -31,7 +31,7 @@ def main(path):
             im1.save(f"{path}/cropped/{file_name}_1.png")
 
             # 2ND IMAGE
-            im2 = im.crop((175, 0, 285, height))
+            im2 = im.crop((176, 0, 282, height))
             im2 = np.array(im2)
             im2 = Image.fromarray(im2)
             im2.save(f"{path}/cropped/{file_name}_2.png")
@@ -40,7 +40,7 @@ def main(path):
             im3 = im.crop((350, 0, width, height))
             im3 = np.array(im3)
             im3 = Image.fromarray(im3)
-            im3.save(f"{path}/cropped/3_{file_name}_3.png")
+            im3.save(f"{path}/cropped/{file_name}_3.png")
 
 
 if __name__ == "__main__":
