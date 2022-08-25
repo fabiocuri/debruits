@@ -62,7 +62,7 @@ def concat2model(mode, paths):
         imagehandler_concat.read_image()
         imagehandler_concat.get_image_name(image_name=image_name)
         imagehandler_concat.export_image(
-            output_path=f"{paths['model']}/{mode}", scale=255
+            output_path=f"{paths['concat']}/{mode}", scale=255
         )
 
 
@@ -76,7 +76,7 @@ def load_images(mode, paths):
 
     src_list, tar_list = list(), list()
 
-    for file in tqdm(glob.glob(f"{paths['model']}/{mode}/*")):
+    for file in tqdm(glob.glob(f"{paths['concat']}/{mode}/*")):
 
         imagehandler_frame = ImageClass(input_path=file)
         imagehandler_frame.read_image()
@@ -97,10 +97,11 @@ def load_images(mode, paths):
 def preprocess4GAN(mode):
 
     paths = {
-        "frames": f"/content/debruits/data/input/frames",
-        "resized": f"/content/drive/MyDrive/input/resized",
-        "edges": f"/content/drive/MyDrive/input/edges",
-        "model": f"/content/drive/MyDrive/input/model",
+        "frames": "/content/debruits/data/input/frames",
+        "resized": "/content/debruits/data/input/resized",
+        "edges": "/content/debruits/data/input/edges",
+        "concat": "/content/debruits/data/input/concat",
+        "model": "/content/drive/MyDrive/input/model",
     }
 
     effects_and_canny(mode=mode, paths=paths)
@@ -108,7 +109,7 @@ def preprocess4GAN(mode):
     concat2model(mode=mode, paths=paths)
 
     [src_images_train, tar_images_train] = load_images(mode=mode, paths=paths)
-    savez_compressed(f"{paths['model']}/{mode}.npz", src_images_train, tar_images_train)
+    savez_compressed("/content/drive/MyDrive/input/model/{mode}.npz", src_images_train, tar_images_train)
 
 
 if __name__ == "__main__":
