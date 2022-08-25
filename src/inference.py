@@ -28,6 +28,6 @@ if __name__ == "__main__":
     paths = {"inference": "/content/drive/MyDrive/output/inference"}
 
     inference_dataset = load_real_samples("/content/drive/MyDrive/input/model/test.npz")
-    g_model = load_model("/content/drive/MyDrive/output/models/trained_models/g_model.h5")
+    g_model = load_model("/content/drive/MyDrive/output/trained_models/g_model.h5")
 
     predict(g_model, inference_dataset, paths, mode="test")
