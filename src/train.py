@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-
+import os
 from matplotlib import pyplot
 from numpy import load, ones, zeros
 from numpy.random import randint
@@ -216,7 +216,7 @@ def summarize_performance(step, g_model, dataset, n_samples=3):
 
 
 def train(
-    d_model, g_model, gan_model, train_dataset, val_dataset, n_epochs=2, n_batch=1
+    d_model, g_model, gan_model, train_dataset, val_dataset, stop_step, n_epochs=2, n_batch=1
 ):
 
     n_patch = d_model.output_shape[1]
@@ -245,7 +245,7 @@ def train(
 
         if (i + 1) % 100 == 0:
 
-            summarize_performance(i, g_model, val_dataset)
+            summarize_performance(i+stop_step, g_model, val_dataset)
 
     Path("/content/drive/MyDrive/output/trained_models/").mkdir(parents=True, exist_ok=True)
     d_model.save("/content/drive/MyDrive/output/trained_models/d_model.h5")
@@ -268,10 +268,15 @@ if __name__ == "__main__":
       g_model = define_generator(image_shape)
       gan_model = define_gan(g_model, d_model, image_shape)
 
+      stop_step = 0
+
     if train_type == "continue":
 
       d_model = load_model('/content/drive/MyDrive/output/trained_models/d_model.h5')
       g_model = load_model('/content/drive/MyDrive/output/trained_models/g_model.h5')
       gan_model = load_model('/content/drive/MyDrive/output/trained_models/gan_model.h5')
 
-    train(d_model, g_model, gan_model, train_dataset, val_dataset, n_epochs)
+      stop_step = os.listdir("/content/drive/MyDrive/output/plots/")
+      stop_step = int(sorted([int(x.split(".png")[0].split("plot_")[1]) for x in stop_step])[-1])
+      
+    train(d_model, g_model, gan_model, train_dataset, val_dataset, stop_step, n_epochs)
