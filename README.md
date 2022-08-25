@@ -1,8 +1,7 @@
 # DE BRUITS
-`
-!git clone https://github.com/fabiocuri/debruits.git
 
-!bash /content/debruits/run.sh create
-
-!bash /content/debruits/run.sh preprocess
-`
+```ruby
+require 'redcarpet'
+markdown = Redcarpet.new("Hello World!")
+puts markdown.to_html
+```
