@@ -22,10 +22,12 @@ TO_BE_CROPPED_FOLDER="/content/drive/MyDrive/plots2"
 if [ "$1" = "create" ]; then
  $PIP_VERSION install -r /content/debruits/requirements.txt
 elif [[ "$1" = "preprocess" ]]; then
- $PYTHON_VERSION /content/debruits/src/$PREPROCESS_PY $BRIGHTNESS $CONTRAST $BLUR $SATURATION
+ $PYTHON_VERSION /content/debruits/src/$PREPROCESS_PY train $BRIGHTNESS $CONTRAST $BLUR $SATURATION
+ $PYTHON_VERSION /content/debruits/src/$PREPROCESS_PY val $BRIGHTNESS $CONTRAST $BLUR $SATURATION
 elif [[ "$1" = "train" ]]; then
  $PYTHON_VERSION /content/debruits/src/$TRAIN_PY $N_EPOCHS
 elif [[ "$1" = "inference" ]]; then
+ $PYTHON_VERSION /content/debruits/src/$PREPROCESS_PY test $BRIGHTNESS $CONTRAST $BLUR $SATURATION
  $PYTHON_VERSION /content/debruits/src/$INFERENCE_PY
 elif [[ "$1" = "super_resolution" ]]; then
  $PYTHON_VERSION /content/debruits/src/$SUPER_RESOLUTION_PY $N_SUPER_RESOLUTION $SUPER_RESOLUTION_FOLDER
