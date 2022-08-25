@@ -24,6 +24,8 @@ def main(path):
             im = Image.fromarray(im)
             width, height = im.size
 
+            print(f"{path}/cropped/{file_name}_1.png")
+
             # 1ST IMAGE
             im1 = im.crop((0, 0, 108, height))
             im1 = np.array(im1)
@@ -31,7 +33,7 @@ def main(path):
             im1.save(f"{path}/cropped/{file_name}_1.png")
 
             # 2ND IMAGE
-            im2 = im.crop((176, 0, 282, height))
+            im2 = im.crop((175, 0, 283, height))
             im2 = np.array(im2)
             im2 = Image.fromarray(im2)
             im2.save(f"{path}/cropped/{file_name}_2.png")
