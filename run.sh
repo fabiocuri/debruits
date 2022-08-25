@@ -21,5 +21,5 @@ elif [[ "$1" = "inference" ]]; then
 elif [[ "$1" = "crop" ]]; then
  $PYTHON_VERSION /content/debruits/src/crop.py $2
 elif [[ "$1" = "super_resolution" ]]; then
- $PYTHON_VERSION /content/debruits/src/super_resolution.py $2 $N_SUPER_RESOLUTION $SUPER_RESOLUTION_FOLDER
+ $PYTHON_VERSION /content/debruits/src/super_resolution.py $2 $N_SUPER_RESOLUTION
 fi
