@@ -10,8 +10,8 @@ from rdn import RDN
 
 if __name__ == "__main__":
 
-    n_loop = int(sys.argv[-2])
-    path = sys.argv[-1]
+    n_loop = int(sys.argv[-1])
+    path = sys.argv[-2]
 
     rdn = RDN(weights="psnr-small")
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
             imagehandler = ImageClass(input_path=file)
             imagehandler.read_image()
             imagehandler.resize((1024, 1024))
-            imagehandler.get_image_name()
+            imagehandler.get_image_name(file.split("/")[-1].split(".")[0])
             imagehandler.export_image(
                 output_path=file.replace(imagehandler.image_name, "")[:-1], scale=1
             )
