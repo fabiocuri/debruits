@@ -1,4 +1,4 @@
-# DE BRUITS
+# De Bruits - Computer Vision and motion
 
 Run the following commands on Google Colab:
 
