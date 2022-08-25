@@ -111,7 +111,7 @@ def preprocess4GAN(mode):
     
     Path("/content/drive/MyDrive/input/model/").mkdir(parents=True, exist_ok=True)
 
-    savez_compressed("/content/drive/MyDrive/input/model/{mode}.npz", src_images_train, tar_images_train)
+    savez_compressed(f"/content/drive/MyDrive/input/model/{mode}.npz", src_images_train, tar_images_train)
 
 
 if __name__ == "__main__":
