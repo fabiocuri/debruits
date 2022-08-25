@@ -15,7 +15,7 @@ def main(path):
 
         if file.endswith(".png"):
 
-            file_name = file.split("/")[-1]
+            file_name = file.split("/")[-1].split(".")[0]
 
             im = Image.open(file)
             width, height = im.size
@@ -28,19 +28,19 @@ def main(path):
             im1 = im.crop((0, 0, 108, height))
             im1 = np.array(im1)
             im1 = Image.fromarray(im1)
-            im1.save(f"{path}/cropped/1_{file_name}")
+            im1.save(f"{path}/cropped/{file_name}_1.png")
 
             # 2ND IMAGE
             im2 = im.crop((175, 0, 285, height))
             im2 = np.array(im2)
             im2 = Image.fromarray(im2)
-            im2.save(f"{path}/cropped/2_{file_name}")
+            im2.save(f"{path}/cropped/{file_name}_2.png")
 
             # 3RD IMAGE
             im3 = im.crop((350, 0, width, height))
             im3 = np.array(im3)
             im3 = Image.fromarray(im3)
-            im3.save(f"{path}/cropped/3_{file_name}")
+            im3.save(f"{path}/cropped/3_{file_name}_3.png")
 
 
 if __name__ == "__main__":
