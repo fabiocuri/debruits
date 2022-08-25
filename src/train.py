@@ -4,6 +4,7 @@ from pathlib import Path
 from matplotlib import pyplot
 from numpy import load, ones, zeros
 from numpy.random import randint
+from tensorflow.keras.models import load_model
 from tensorflow.keras import Input, Model
 from tensorflow.keras.initializers import RandomNormal
 from tensorflow.keras.layers import (
@@ -247,20 +248,30 @@ def train(
             summarize_performance(i, g_model, val_dataset)
 
     Path("/content/drive/MyDrive/output/models/trained_models/").mkdir(parents=True, exist_ok=True)
-    g_model.save("/content/drive/MyDrive/output/models/trained_models/")
+    d_model.save("/content/drive/MyDrive/output/models/trained_models/d_model.h5")
+    g_model.save("/content/drive/MyDrive/output/models/trained_models/g_model.h5")
+    gan_model.save("/content/drive/MyDrive/output/models/trained_models/gan_model.h5")
 
 
 if __name__ == "__main__":
 
     n_epochs = int(list(sys.argv)[-1])
+    train_type = str(list(sys.argv)[-2])
 
     train_dataset = load_real_samples("/content/drive/MyDrive/input/model/train.npz")
     val_dataset = load_real_samples("/content/drive/MyDrive/input/model/val.npz")
     image_shape = train_dataset[0].shape[1:]
 
-    d_model = define_discriminator(image_shape)
-    g_model = define_generator(image_shape)
+    if train_type == "start":
 
-    gan_model = define_gan(g_model, d_model, image_shape)
+      d_model = define_discriminator(image_shape)
+      g_model = define_generator(image_shape)
+      gan_model = define_gan(g_model, d_model, image_shape)
+
+    if train_type == "continue":
+
+      d_model = load_model('/content/drive/MyDrive/output/models/trained_models/d_model.h5')
+      g_model = load_model('/content/drive/MyDrive/output/models/trained_models/g_model.h5')
+      gan_model = load_model('/content/drive/MyDrive/output/models/trained_models/gan_model.h5')
 
     train(d_model, g_model, gan_model, train_dataset, val_dataset, n_epochs)
