@@ -1,6 +1,7 @@
 import glob
 import sys
 from pathlib import Path
+
 import cv2
 from numpy import asarray, savez_compressed
 from tensorflow.keras.preprocessing.image import img_to_array
@@ -108,10 +109,14 @@ def preprocess4GAN(mode):
     concat2model(mode=mode, paths=paths)
 
     [src_images_train, tar_images_train] = load_images(mode=mode, paths=paths)
-    
+
     Path("/content/drive/MyDrive/input/model/").mkdir(parents=True, exist_ok=True)
 
-    savez_compressed(f"/content/drive/MyDrive/input/model/{mode}.npz", src_images_train, tar_images_train)
+    savez_compressed(
+        f"/content/drive/MyDrive/input/model/{mode}.npz",
+        src_images_train,
+        tar_images_train,
+    )
 
 
 if __name__ == "__main__":

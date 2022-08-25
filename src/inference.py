@@ -1,9 +1,9 @@
-from tensorflow import keras
+from tensorflow.keras.models import load_model
 from tqdm import tqdm
 
 from handlers import ImageClass
 from train import load_real_samples
-from tensorflow.keras.models import load_model
+
 
 def predict(g_model, dataset, paths, mode):
 
