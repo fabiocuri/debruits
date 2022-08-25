@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from handlers import ImageClass
 from train import load_real_samples
-
+from tensorflow.keras.models import load_model
 
 def predict(g_model, dataset, paths, mode):
 
@@ -25,9 +25,9 @@ def predict(g_model, dataset, paths, mode):
 
 if __name__ == "__main__":
 
-    paths = {"inference": "/content/drive/MyDrive/inference"}
+    paths = {"inference": "/content/drive/MyDrive/output/inference"}
 
-    inference_dataset = load_real_samples("/content/debruits/data/input/model/test.npz")
-    g_model = keras.models.load_model("/content/debruits/data/output/trained_models")
+    inference_dataset = load_real_samples("/content/drive/MyDrive/input/model/test.npz")
+    g_model = load_model("/content/drive/MyDrive/output/models/trained_models/g_model.h5")
 
     predict(g_model, inference_dataset, paths, mode="test")
