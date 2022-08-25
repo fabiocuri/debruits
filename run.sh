@@ -16,7 +16,7 @@ elif [[ "$1" = "preprocess" ]]; then
  $PYTHON_VERSION /content/debruits/src/preprocess.py train $BRIGHTNESS $CONTRAST $BLUR $SATURATION
  $PYTHON_VERSION /content/debruits/src/preprocess.py val $BRIGHTNESS $CONTRAST $BLUR $SATURATION
 elif [[ "$1" = "train" ]]; then
- $PYTHON_VERSION /content/debruits/src/train.py $1 $N_EPOCHS
+ $PYTHON_VERSION /content/debruits/src/train.py $2 $N_EPOCHS
 elif [[ "$1" = "inference" ]]; then
  $PYTHON_VERSION /content/debruits/src/preprocess.py test $BRIGHTNESS $CONTRAST $BLUR $SATURATION
  $PYTHON_VERSION /content/debruits/src/inference.py
