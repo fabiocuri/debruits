@@ -247,10 +247,10 @@ def train(
 
             summarize_performance(i, g_model, val_dataset)
 
-    Path("/content/drive/MyDrive/output/models/trained_models/").mkdir(parents=True, exist_ok=True)
-    d_model.save("/content/drive/MyDrive/output/models/trained_models/d_model.h5")
-    g_model.save("/content/drive/MyDrive/output/models/trained_models/g_model.h5")
-    gan_model.save("/content/drive/MyDrive/output/models/trained_models/gan_model.h5")
+    Path("/content/drive/MyDrive/output/trained_models/").mkdir(parents=True, exist_ok=True)
+    d_model.save("/content/drive/MyDrive/output/trained_models/d_model.h5")
+    g_model.save("/content/drive/MyDrive/output/trained_models/g_model.h5")
+    gan_model.save("/content/drive/MyDrive/output/trained_models/gan_model.h5")
 
 
 if __name__ == "__main__":
@@ -270,8 +270,8 @@ if __name__ == "__main__":
 
     if train_type == "continue":
 
-      d_model = load_model('/content/drive/MyDrive/output/models/trained_models/d_model.h5')
-      g_model = load_model('/content/drive/MyDrive/output/models/trained_models/g_model.h5')
-      gan_model = load_model('/content/drive/MyDrive/output/models/trained_models/gan_model.h5')
+      d_model = load_model('/content/drive/MyDrive/output/trained_models/d_model.h5')
+      g_model = load_model('/content/drive/MyDrive/output/trained_models/g_model.h5')
+      gan_model = load_model('/content/drive/MyDrive/output/trained_models/gan_model.h5')
 
     train(d_model, g_model, gan_model, train_dataset, val_dataset, n_epochs)
