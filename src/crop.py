@@ -24,8 +24,6 @@ def main(path):
             im = Image.fromarray(im)
             width, height = im.size
 
-            print(f"{path}/cropped/{file_name}_1.png")
-
             # 1ST IMAGE
             im1 = im.crop((0, 0, 108, height))
             im1 = np.array(im1)
