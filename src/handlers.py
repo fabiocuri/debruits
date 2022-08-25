@@ -146,7 +146,7 @@ class ImageClass:
 
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        cv2.imwrite(f"{output_path}/{self.image_name}.jpg", scale * self.image)
+        cv2.imwrite(f"{output_path}/{self.image_name}.png", scale * self.image)
         print(self.image.shape)
 
     def imshow(self):
