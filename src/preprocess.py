@@ -94,7 +94,14 @@ def load_images(mode, paths):
     return [asarray(src_list), asarray(tar_list)]
 
 
-def preprocess4GAN(mode, paths):
+def preprocess4GAN(mode):
+
+    paths = {
+        "frames": f"/content/debruits/data/input/frames",
+        "resized": f"/content/drive/MyDrive/input/resized",
+        "edges": f"/content/drive/MyDrive/input/edges",
+        "model": f"/content/drive/MyDrive/input/model",
+    }
 
     effects_and_canny(mode=mode, paths=paths)
 
@@ -106,15 +113,4 @@ def preprocess4GAN(mode, paths):
 
 if __name__ == "__main__":
 
-    input_path = "/content/debruits/data/input"
-
-    paths = {
-        "frames": f"{input_path}/frames",
-        "resized": f"{input_path}/resized",
-        "edges": f"{input_path}/edges",
-        "model": f"{input_path}/model",
-    }
-
-    preprocess4GAN(mode="train", paths=paths)
-    preprocess4GAN(mode="val", paths=paths)
-    preprocess4GAN(mode="test", paths=paths)
+    preprocess4GAN(mode=sys.argv[1])
