@@ -101,7 +101,6 @@ def preprocess4GAN(mode):
         "resized": "/content/debruits/data/input/resized",
         "edges": "/content/debruits/data/input/edges",
         "concat": "/content/debruits/data/input/concat",
-        "model": "/content/drive/MyDrive/input/model",
     }
 
     effects_and_canny(mode=mode, paths=paths)
