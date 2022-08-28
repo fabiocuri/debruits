@@ -22,6 +22,10 @@ if __name__ == "__main__":
             img = Image.open(file)
             lr_img = np.array(img)
 
+            if lr_img.shape[2] == 4:
+
+                lr_img = lr_img[:,:,:3]
+
             sr_img = rdn.predict(lr_img)
             highres_img = Image.fromarray(sr_img)
             highres_img.save(file)
