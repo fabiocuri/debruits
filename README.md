@@ -18,7 +18,9 @@ drive.mount('/content/drive')
 
 !bash /content/debruits/run.sh inference
 
-!bash /content/debruits/run.sh crop /content/drive/MyDrive/_plots
-
 !bash /content/debruits/run.sh super_resolution /content/drive/MyDrive/output/inference
+
+!bash /content/debruits/run.sh crop /content/drive/MyDrive/plots
+
+!bash /content/debruits/run.sh super_resolution /content/drive/MyDrive/plots/cropped
 ```
