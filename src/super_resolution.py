@@ -2,15 +2,12 @@ import glob
 import sys
 
 import cv2
-from rdn import RDN
 from tqdm import tqdm
 
 if __name__ == "__main__":
 
     n_loop = int(sys.argv[-1])
     path = sys.argv[-2]
-
-    rdn = RDN(weights="noise-cancel")
 
     for file in tqdm(glob.glob(f"{path}/*")):
 
