@@ -13,7 +13,7 @@ if __name__ == "__main__":
     n_loop = int(sys.argv[-1])
     path = sys.argv[-2]
 
-    rdn = RDN(weights="psnr-small")
+    rdn = RDN(weights="noise-cancel")
 
     for file in tqdm(glob.glob(f"{path}/*")):
 
@@ -29,10 +29,4 @@ if __name__ == "__main__":
             sr_img = rdn.predict(lr_img)
             highres_img = Image.fromarray(sr_img)
             highres_img.save(file)
-
-            imagehandler = ImageClass(input_path=file)
-            imagehandler.read_image()
-            imagehandler.get_image_name(file.split("/")[-1].split(".")[0])
-            imagehandler.export_image(
-                output_path=file.replace(imagehandler.image_name, "")[:-1], scale=1
-            )
+            
