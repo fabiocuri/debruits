@@ -42,6 +42,7 @@ class VideoClass:
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
         success, image = self.video.read()
+        dim = (image.shape[0], image.shape[1])
         image = self.resize_image(image, dim)
         count = 1
 
