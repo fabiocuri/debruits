@@ -2,7 +2,7 @@
 
 Run the following commands on Google Colab:
 
-```ruby
+```bash
 !git clone https://github.com/fabiocuri/debruits.git
 
 from google.colab import drive
