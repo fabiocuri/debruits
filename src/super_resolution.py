@@ -2,9 +2,8 @@ import glob
 import sys
 
 import cv2
-from tqdm import tqdm
-
 from rdn import RDN
+from tqdm import tqdm
 
 if __name__ == "__main__":
 
