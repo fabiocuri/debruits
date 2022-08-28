@@ -16,10 +16,12 @@ elif [[ "$1" = "preprocess" ]]; then
 elif [[ "$1" = "train" ]]; then
  $PYTHON_VERSION /content/debruits/src/train.py $2 $N_EPOCHS
 elif [[ "$1" = "inference" ]]; then
- $PYTHON_VERSION /content/debruits/src/preprocess.py test $BRIGHTNESS $CONTRAST $BLUR $SATURATION
+ #$PYTHON_VERSION /content/debruits/src/preprocess.py test $BRIGHTNESS $CONTRAST $BLUR $SATURATION
  $PYTHON_VERSION /content/debruits/src/inference.py
 elif [[ "$1" = "crop" ]]; then
  $PYTHON_VERSION /content/debruits/src/crop.py $2
 elif [[ "$1" = "super_resolution" ]]; then
  $PYTHON_VERSION /content/debruits/src/super_resolution.py $2 $N_SUPER_RESOLUTION
+elif [[ "$1" = "split_video" ]]; then
+ $PYTHON_VERSION /content/debruits/src/split_video.py $2
 fi
