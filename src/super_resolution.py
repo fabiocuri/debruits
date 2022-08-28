@@ -1,11 +1,9 @@
 import glob
 import sys
 
-import numpy as np
-from PIL import Image
+import cv2
 from tqdm import tqdm
 
-from handlers import ImageClass
 from rdn import RDN
 
 if __name__ == "__main__":
@@ -19,14 +17,6 @@ if __name__ == "__main__":
 
         for _ in range(n_loop):
 
-            img = Image.open(file)
-            lr_img = np.array(img)
-
-            if lr_img.shape[2] == 4:
-
-                lr_img = lr_img[:,:,:3]
-
-            sr_img = rdn.predict(lr_img)
-            highres_img = Image.fromarray(sr_img)
-            highres_img.save(file)
-            
+            img = cv2.imread(file)
+            dst = cv2.fastNlMeansDenoisingColored(img, None, 5, 5, 5, 10)
+            cv2.imwrite(img, dst)
