@@ -32,7 +32,6 @@ if __name__ == "__main__":
 
             imagehandler = ImageClass(input_path=file)
             imagehandler.read_image()
-            imagehandler.resize((1024, 1024))
             imagehandler.get_image_name(file.split("/")[-1].split(".")[0])
             imagehandler.export_image(
                 output_path=file.replace(imagehandler.image_name, "")[:-1], scale=1
