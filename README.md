@@ -23,4 +23,6 @@ drive.mount('/content/drive')
 !bash /content/debruits/run.sh crop /content/drive/MyDrive/plots
 
 !bash /content/debruits/run.sh super_resolution /content/drive/MyDrive/plots/cropped
+
+!bash /content/debruits/run.sh split_video /content/drive/MyDrive/video/DSC_0022.m4v
 ```
