@@ -15,4 +15,4 @@ if __name__ == "__main__":
 
             img = cv2.imread(file)
             dst = cv2.fastNlMeansDenoisingColored(img, None, 5, 5, 5, 10)
-            cv2.imwrite(img, dst)
+            cv2.imwrite(file, dst)
