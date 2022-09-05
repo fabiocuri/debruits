@@ -1,4 +1,4 @@
-# De Bruits - Computer Vision and motion
+# De Bruits
 
 ## Image
 
