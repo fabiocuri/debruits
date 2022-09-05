@@ -2,30 +2,10 @@
 
 ## Image
 
-Run the following commands on Google Colab for the entire pipeline:
+Run the following notebook to generate image content:
 
 ```
-!git clone https://github.com/fabiocuri/debruits.git
-
-from google.colab import drive
-drive.mount('/content/drive')
-
-!bash /content/debruits/run_image.sh create
-
-!bash /content/debruits/run_image.sh preprocess
-
-!bash /content/debruits/run_image.sh train start
-
-!bash /content/debruits/run_image.sh train continue
-
-!bash /content/debruits/run_image.sh inference
-
-!bash /content/debruits/run_image.sh super_resolution /content/drive/MyDrive/image/output/inference
-
-!bash /content/debruits/run_image.sh crop /content/drive/MyDrive/image/plots
-
-!bash /content/debruits/run_image.sh super_resolution /content/drive/MyDrive/image/plots/cropped
-
+DEBRUITS_IMAGE.ipynb
 ```
 
 In order to split videos into frames:
@@ -36,4 +16,8 @@ In order to split videos into frames:
 
 ## Audio
 
-Run the following commands on Google Colab:
+Run the following notebook to generate audio content:
+
+```
+DEBRUITS_AUDIO.ipynb
+```
