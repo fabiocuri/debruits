@@ -115,16 +115,7 @@ class ImageClass:
 
     def brightness_contrast(self, BRIGHTNESS, CONTRAST):
 
-        new_image = self.image.copy()
-
-        for y in range(self.image.shape[0]):
-            for x in range(self.image.shape[1]):
-                for c in range(self.image.shape[2]):
-                    new_image[y, x, c] = np.clip(
-                        CONTRAST * self.image[y, x, c] + BRIGHTNESS, 0, 255
-                    )
-
-        self.image = new_image
+        self.image = CONTRAST * self.image + BRIGHTNESS
 
     def blur(self, BLUR):
 
@@ -134,7 +125,6 @@ class ImageClass:
 
         (h, s, v) = cv2.split(self.image)
         s = s * SATURATION
-        s = np.clip(s, 0, 255)
         self.image = cv2.merge([h, s, v])
 
         self.image = cv2.cvtColor(self.image.astype("uint8"), cv2.COLOR_HSV2BGR)
