@@ -18,10 +18,10 @@ def effects_and_canny(mode, paths):
 
     """
 
-    BRIGHTNESS = int(list(sys.argv)[-4])
+    BRIGHTNESS = float(list(sys.argv)[-4])
     CONTRAST = float(list(sys.argv)[-3])
     BLUR = int(list(sys.argv)[-2])
-    SATURATION = int(list(sys.argv)[-1])
+    SATURATION = float(list(sys.argv)[-1])
 
     for file in tqdm(glob.glob(f"{paths['frames']}/{mode}/*")):
 
