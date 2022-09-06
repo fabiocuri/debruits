@@ -251,7 +251,7 @@ def train(
 
         print(">%d, d1[%.3f] d2[%.3f] g[%.3f]" % (i + 1, d_loss1, d_loss2, g_loss))
 
-        if (i + 1) % 100 == 0:
+        if (i + 1) % 10 == 0:
 
             summarize_performance(i + stop_step, g_model, val_dataset)
 
