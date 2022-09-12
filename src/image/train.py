@@ -7,15 +7,9 @@ from numpy import load, ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import (
-    Activation,
-    BatchNormalization,
-    Concatenate,
-    Conv2D,
-    Conv2DTranspose,
-    Dropout,
-    LeakyReLU,
-)
+from tensorflow.keras.layers import (Activation, BatchNormalization,
+                                     Concatenate, Conv2D, Conv2DTranspose,
+                                     Dropout, LeakyReLU)
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
@@ -209,7 +203,9 @@ def summarize_performance(step, g_model, dataset, n_samples=3):
         pyplot.axis("off")
         pyplot.imshow(X_realB[i])
 
-    Path("/content/drive/MyDrive/image/output/plots/").mkdir(parents=True, exist_ok=True)
+    Path("/content/drive/MyDrive/image/output/plots/").mkdir(
+        parents=True, exist_ok=True
+    )
 
     filename1 = "/content/drive/MyDrive/image/output/plots/plot_%06d.png" % (step + 1)
     pyplot.savefig(filename1)
@@ -268,7 +264,9 @@ if __name__ == "__main__":
     n_epochs = int(list(sys.argv)[-1])
     train_type = str(list(sys.argv)[-2])
 
-    train_dataset = load_real_samples("/content/drive/MyDrive/image/input/model/train.npz")
+    train_dataset = load_real_samples(
+        "/content/drive/MyDrive/image/input/model/train.npz"
+    )
     val_dataset = load_real_samples("/content/drive/MyDrive/image/input/model/val.npz")
     image_shape = train_dataset[0].shape[1:]
 
@@ -282,8 +280,12 @@ if __name__ == "__main__":
 
     if train_type == "continue":
 
-        d_model = load_model("/content/drive/MyDrive/image/output/trained_models/d_model.h5")
-        g_model = load_model("/content/drive/MyDrive/image/output/trained_models/g_model.h5")
+        d_model = load_model(
+            "/content/drive/MyDrive/image/output/trained_models/d_model.h5"
+        )
+        g_model = load_model(
+            "/content/drive/MyDrive/image/output/trained_models/g_model.h5"
+        )
         gan_model = load_model(
             "/content/drive/MyDrive/image/output/trained_models/gan_model.h5"
         )

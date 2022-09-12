@@ -2,9 +2,8 @@ import glob
 import os
 from pathlib import Path
 
-from moviepy.editor import *
-
 from handlers import VideoClass
+from moviepy.editor import *
 
 
 def video2frames(mode, paths, dim=(256, 256), trim_ratio=0.7):

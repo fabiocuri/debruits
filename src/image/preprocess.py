@@ -3,11 +3,10 @@ import sys
 from pathlib import Path
 
 import cv2
+from handlers import ImageClass
 from numpy import asarray, savez_compressed
 from tensorflow.keras.preprocessing.image import img_to_array
 from tqdm import tqdm
-
-from handlers import ImageClass
 
 
 def effects_and_canny(mode, paths):

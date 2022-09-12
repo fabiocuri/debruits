@@ -1,7 +1,6 @@
+from handlers import ImageClass
 from tensorflow.keras.models import load_model
 from tqdm import tqdm
-
-from handlers import ImageClass
 from train import load_real_samples
 
 
@@ -27,7 +26,11 @@ if __name__ == "__main__":
 
     paths = {"inference": "/content/drive/MyDrive/image/output/inference"}
 
-    inference_dataset = load_real_samples("/content/drive/MyDrive/image/input/model/test.npz")
-    g_model = load_model("/content/drive/MyDrive/image/output/trained_models/g_model.h5")
+    inference_dataset = load_real_samples(
+        "/content/drive/MyDrive/image/input/model/test.npz"
+    )
+    g_model = load_model(
+        "/content/drive/MyDrive/image/output/trained_models/g_model.h5"
+    )
 
     predict(g_model, inference_dataset, paths, mode="test")
