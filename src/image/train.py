@@ -7,9 +7,15 @@ from numpy import load, ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import (Activation, BatchNormalization,
-                                     Concatenate, Conv2D, Conv2DTranspose,
-                                     Dropout, LeakyReLU)
+from tensorflow.keras.layers import (
+    Activation,
+    BatchNormalization,
+    Concatenate,
+    Conv2D,
+    Conv2DTranspose,
+    Dropout,
+    LeakyReLU,
+)
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm

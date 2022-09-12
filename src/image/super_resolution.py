@@ -3,8 +3,8 @@ import sys
 
 import cv2
 import numpy as np
-from ISR.models import RDN
 from PIL import Image
+from rdn import RDN
 from tqdm import tqdm
 
 if __name__ == "__main__":
@@ -20,10 +20,10 @@ if __name__ == "__main__":
 
             img = Image.open(file)
             img = np.array(img)
-            img = img[:,:,:3]
+            img = img[:, :, :3]
 
             img = rdn.predict(img)
-            img = img[:,:,:3]
+            img = img[:, :, :3]
             img = Image.fromarray(img)
             img = img.save(file)
 
