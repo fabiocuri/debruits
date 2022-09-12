@@ -19,10 +19,12 @@ if __name__ == "__main__":
         for _ in range(2):
 
             img = Image.open(file)
-            lr_img = np.array(img)
+            img = np.array(img)
+            img = img[:,:,:3]
 
-            sr_img = rdn.predict(lr_img)
-            img = Image.fromarray(sr_img)
+            img = rdn.predict(img)
+            img = img[:,:,:3]
+            img = Image.fromarray(img)
             img = img.save(file)
 
         for _ in range(n_loop):
