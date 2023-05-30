@@ -9,7 +9,7 @@ from tensorflow.keras.preprocessing.image import img_to_array
 from tqdm import tqdm
 
 
-def effects_and_canny(mode, paths):
+def create_model_data(mode, paths):
 
     """
 
@@ -24,45 +24,32 @@ def effects_and_canny(mode, paths):
 
     for file in tqdm(glob.glob(f"{paths['frames']}/{mode}/*")):
 
-        imagehandler = ImageClass(input_path=file, mode=mode)
-        imagehandler.read_image()
-        imagehandler.resize((256, 256))
-        imagehandler.get_image_name()
-        imagehandler.brightness_contrast(BRIGHTNESS, CONTRAST)
-        imagehandler.blur(BLUR)
-        imagehandler.saturation(SATURATION)
-        imagehandler.export_image(output_path=f"{paths['resized']}/{mode}", scale=255)
-        imagehandler.edges_canny()
-        imagehandler.export_image(output_path=f"{paths['edges']}/{mode}", scale=1)
-
-
-def concat2model(mode, paths):
-
-    """
-
-    Concatenates source and target images.
-
-    """
-
-    for file in tqdm(glob.glob(f"{paths['edges']}/{mode}/*")):
-
-        image_name = file.split("/")[-1]
-
-        imagehandler_frame = ImageClass(
-            input_path=f"{paths['resized']}/{mode}/{image_name}", mode=mode
-        )
+        imagehandler_frame = ImageClass(input_path=file, mode=mode)
         imagehandler_frame.read_image()
-
+        imagehandler_frame.resize((256, 256))
+        imagehandler_frame.get_image_name()
+        imagehandler_frame.brightness_contrast(BRIGHTNESS, CONTRAST)
+        imagehandler_frame.blur(BLUR)
+        imagehandler_frame.saturation(SATURATION)
+        imagehandler_frame.export_image(output_path=f"{paths['resized']}/{mode}", scale=1)
+        
         imagehandler_edges = ImageClass(input_path=file, mode=mode)
         imagehandler_edges.read_image()
+        imagehandler_edges.resize((256, 256))
+        imagehandler_edges.get_image_name()
+        imagehandler_edges.edges_canny()
+        imagehandler_edges.export_image(output_path=f"{paths['edges']}/{mode}", scale=1)
+
+        imagehandler_edges.image[:,:,1] = imagehandler_edges.image[:,:,0]
+        imagehandler_edges.image[:,:,2] = imagehandler_edges.image[:,:,0]
 
         concat_img = cv2.hconcat([imagehandler_edges.image, imagehandler_frame.image])
 
         imagehandler_concat = ImageClass(cv2image=concat_img, mode=mode)
         imagehandler_concat.read_image()
-        imagehandler_concat.get_image_name(image_name=image_name)
+        imagehandler_concat.get_image_name(image_name=file.split("/")[-1].split(".")[0])
         imagehandler_concat.export_image(
-            output_path=f"{paths['concat']}/{mode}", scale=255
+            output_path=f"{paths['concat']}/{mode}", scale=1
         )
 
 
@@ -103,9 +90,7 @@ def preprocess4GAN(mode):
         "concat": "/content/debruits/data/image/input/concat",
     }
 
-    effects_and_canny(mode=mode, paths=paths)
-
-    concat2model(mode=mode, paths=paths)
+    create_model_data(mode=mode, paths=paths)
 
     [src_images_train, tar_images_train] = load_images(mode=mode, paths=paths)
 
