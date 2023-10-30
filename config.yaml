@@ -1,0 +1,17 @@
+system_config:
+  PIP_VERSION: pip3
+  PYTHON_VERSION: python3
+model_config:
+  MODE: "continue"
+  BRIGHTNESS: 1
+  CONTRAST: 1
+  BLUR: 20
+  SATURATION: 1
+  N_EPOCHS: 1
+  INPUT_FILTER: "original"
+  TARGET_FILTER: "gaussian"
+frames_to_video_config:
+  FPS: 5
+folder: "bairrodorego"
+enhanced_width: 1920
+enhanced_height: 1080

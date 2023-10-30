@@ -1,0 +1,54 @@
+VueJS
+
+1. Create package.json and add:
+
+{
+    "name": "debruits",
+    "version": "0.1.0",
+    "dependencies": {
+        "@vue/cli-service": "5.0.8",
+        "@vue/compiler-sfc": "3.3.4",
+        "core-js": "3.32.0",
+        "express": "^4.18.2",
+        "vue": "3.2.26"
+    },
+    "scripts": {
+        "serve": "vue-cli-service serve",
+        "build": "vue-cli-service build"
+    }
+}
+
+
+vue is for VueJS, core-js is to make the code readable in all browsers and versions, and the other two are to compile and serve.
+
+2. Create index.html, main.js and App.vue accordingly.
+
+3. Put the main.js and App.vue inside a src folder, and the index.html inside a public folder
+
+4. npm run serve
+
+NodeJS
+
+1. npm install express
+
+2. Create src/server.js and add:
+
+const express = require('express')
+const app = express()
+const bodyParser = require('body-parser')
+
+app.use(bodyParser.json())
+// Whenever we open localhost:3000 on the browser, we get as a return the index.html that is hosted in the path below.
+app.use('/', express.static('../public/'))
+
+app.listen(3000, function () {
+    console.log("app listening on port 3000")
+})
+
+3. To run: node server.js and access it on port 3000 on localhost
+
+4. Now, run npm run build, and it compiles the code and creates the dist folder.
+
+ 
+
+
