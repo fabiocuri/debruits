@@ -1,11 +1,5 @@
 #!/bin/bash
 
-if [ "$#" -ne 1 ]; then
-    echo "Error: Please provide one of the following arguments: preprocess, train, super-resolution-plots, create-video-plots, inference, super-resolution-inference, create-video-inference..."
-    exit 1
-fi
-
-# Get the argument value
 argument="$1"
 
 src_path="./src"
@@ -20,12 +14,10 @@ get_value() {
 PIP_VERSION=$(get_value "PIP_VERSION:")
 PYTHON_VERSION=$(get_value "PYTHON_VERSION:")
 
-# Install requirements
 virtualenv env
 source env/bin/activate
 $PIP_VERSION install -r requirements.txt
 
-# Execute based on the provided argument
 case "$argument" in
     "preprocess")
         $PYTHON_VERSION "$src_path/preprocess.py"
@@ -46,6 +38,18 @@ case "$argument" in
         $PYTHON_VERSION "$src_path/super_resolution.py" inference
         ;;
     "create-video-inference")
+        $PYTHON_VERSION "$src_path/frames2video.py" inference
+        ;;
+    "overlap-results")
+        $PYTHON_VERSION "$src_path/overlap_results.py"
+        ;;
+    "all")
+        $PYTHON_VERSION "$src_path/preprocess.py"
+        $PYTHON_VERSION "$src_path/train.py"
+        $PYTHON_VERSION "$src_path/super_resolution.py" plots
+        $PYTHON_VERSION "$src_path/frames2video.py" plots
+        $PYTHON_VERSION "$src_path/inference.py"
+        $PYTHON_VERSION "$src_path/super_resolution.py" inference
         $PYTHON_VERSION "$src_path/frames2video.py" inference
         ;;
     *)

@@ -17,14 +17,14 @@ def create_model_data(config, mode, paths):
 
         input_img = ImageClass(config=config, input_path=file, mode=mode)
         input_img.read_image()
-        input_img.resize((256, 256))
+        input_img.resize((1024, 1024))
         input_img.get_image_name()
         input_img.input_filter()
         input_img.export_image(output_path=f"{paths['input_images']}/{mode}", scale=255)
 
         target_img = ImageClass(config=config, input_path=file, mode=mode)
         target_img.read_image()
-        target_img.resize((256, 256))
+        target_img.resize((1024, 1024))
         target_img.get_image_name()
         target_img.target_filter()
         target_img.export_image(
@@ -96,6 +96,7 @@ if __name__ == "__main__":
             shutil.rmtree(path)
 
         os.mkdir(path)
+
 
     for mode in ["train", "val", "test"]:
         preprocess4GAN(mode=mode, config=config)

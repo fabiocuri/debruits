@@ -2,16 +2,17 @@ system_config:
   PIP_VERSION: pip3
   PYTHON_VERSION: python3
 model_config:
-  MODE: "continue"
+  MODE: "start"
   BRIGHTNESS: 1
   CONTRAST: 1
   BLUR: 20
   SATURATION: 1
   N_EPOCHS: 1
-  INPUT_FILTER: "original"
-  TARGET_FILTER: "gaussian"
+  INPUT_FILTER: "edges"
+  TARGET_FILTER: "slic-100"
 frames_to_video_config:
   FPS: 5
 folder: "bairrodorego"
 enhanced_width: 1920
 enhanced_height: 1080
+overlap-results: ["slic-500_slic-100", "slic-500_slic-100"]

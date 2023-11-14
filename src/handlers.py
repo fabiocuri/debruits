@@ -4,7 +4,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 from scipy.ndimage import laplace
-
+from PIL import ImageOps, Image
+from skimage.segmentation import slic
+from skimage.color import label2rgb
 
 class VideoClass:
     """
@@ -128,6 +130,22 @@ class ImageClass:
 
             self.image = self.image
 
+        if FILTER == "slic-100":
+
+            self.image_slic = slic(self.image, n_segments=100, compactness=5)
+            self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
+
+        if FILTER == "slic-500":
+
+            self.image_slic = slic(self.image, n_segments=500, compactness=5)
+            self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
+
+        if FILTER == "solarize":
+
+            self.image = Image.fromarray(self.image)
+            self.image = ImageOps.solarize(self.image, threshold = 130)  
+            self.image = np.array(self.image)
+
         if FILTER == "color":
 
             self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
@@ -141,18 +159,12 @@ class ImageClass:
             self.image = cv2.Canny(self.image, 100, 200, 100)
             self.image = np.stack((self.image,) * 3, axis=-1)
 
-        if FILTER == "top-hat":
-
-            kernel = np.ones((5, 5), np.uint8)
-            self.image = cv2.morphologyEx(self.image, cv2.MORPH_TOPHAT, kernel)
-
         if FILTER == "blur":
 
             self.image = cv2.blur(self.image, (self.BLUR, self.BLUR))
 
         if FILTER == "sharpen":
 
-            self.image = cv2.blur(self.image, (10, 10))
             kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
             self.image = cv2.filter2D(src=self.image, ddepth=-1, kernel=kernel)
 

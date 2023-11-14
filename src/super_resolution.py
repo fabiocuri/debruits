@@ -59,7 +59,7 @@ if __name__ == "__main__":
             )
 
             enhancer = ImageEnhance.Sharpness(resized_image)
-            quality_factor = 10.0
+            quality_factor = 20.0
             improved_quality_image = enhancer.enhance(quality_factor)
 
             improved_quality_image.save(frame_path)

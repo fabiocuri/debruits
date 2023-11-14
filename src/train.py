@@ -56,7 +56,7 @@ def define_discriminator(image_shape):
 
     model = Model([in_src_image, in_target_image], patch_out)
 
-    opt = Adam(learning_rate=0.005, beta_1=0.5)
+    opt = Adam(learning_rate=0.0001, beta_1=0.5)
     model.compile(loss="binary_crossentropy", optimizer=opt, loss_weights=[0.5])
 
     return model
@@ -96,7 +96,7 @@ def decoder_block(layer_in, skip_in, n_filters, dropout=True):
     return g
 
 
-def define_generator(image_shape=(256, 256, 3)):
+def define_generator(image_shape=(1024, 1024, 3)):
 
     init = RandomNormal(stddev=0.02)
 
@@ -262,7 +262,7 @@ def train(
                 X_realA = testA[[ix]]
                 X_fakeB = g_model.predict(X_realA)
                 X_fakeB = (X_fakeB + 1) / 2.0
-                X_fakeB = X_fakeB.reshape(256, 256, 3)
+                X_fakeB = X_fakeB.reshape(1024, 1024, 3)
 
                 pyplot.axis("off")
                 pyplot.imshow(X_fakeB)

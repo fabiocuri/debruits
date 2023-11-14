@@ -1,9 +1,4 @@
 # De Bruits
 
-## Image
-
-Run the following notebook to generate image content:
-
-```
-DEBRUITS_IMAGE.ipynb
-```
+Project that involves a GAN and creative art.
+Author: Fabio Curi (De Bruits)
