@@ -1,9 +1,9 @@
-import yaml
 import glob
-import cv2
-from pathlib import Path
 import random
-import numpy as np
+from pathlib import Path
+
+import cv2
+import yaml
 
 if __name__ == "__main__":
 
@@ -12,7 +12,9 @@ if __name__ == "__main__":
 
     overlap_folders = config["overlap-results"]
 
-    inference_plots = glob.glob(f"./data/{config['folder']}/image/output/{overlap_folders[0]}/inference/*")
+    inference_plots = glob.glob(
+        f"./data/{config['folder']}/image/output/{overlap_folders[0]}/inference/*"
+    )
     inference_plots = [file.split("/")[-1] for file in inference_plots]
 
     output_path = f"./data/{config['folder']}/image/output/overlap-{overlap_folders[0]}-{overlap_folders[1]}"
@@ -21,11 +23,15 @@ if __name__ == "__main__":
 
         file = random.choice(inference_plots)
 
-        image_0 = cv2.imread(f"./data/{config['folder']}/image/output/{overlap_folders[0]}/inference/{file}")
+        image_0 = cv2.imread(
+            f"./data/{config['folder']}/image/output/{overlap_folders[0]}/inference/{file}"
+        )
 
         file = random.choice(inference_plots)
 
-        image_1 = cv2.imread(f"./data/{config['folder']}/image/output/{overlap_folders[1]}/inference/{file}")
+        image_1 = cv2.imread(
+            f"./data/{config['folder']}/image/output/{overlap_folders[1]}/inference/{file}"
+        )
 
         overlap = cv2.addWeighted(image_0, 1, image_1, 1, 0)
 

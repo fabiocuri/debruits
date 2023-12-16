@@ -3,10 +3,11 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image, ImageOps
 from scipy.ndimage import laplace
-from PIL import ImageOps, Image
-from skimage.segmentation import slic
 from skimage.color import label2rgb
+from skimage.segmentation import slic
+
 
 class VideoClass:
     """
@@ -133,22 +134,22 @@ class ImageClass:
         if FILTER == "slic-100":
 
             self.image_slic = slic(self.image, n_segments=100, compactness=5)
-            self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
+            self.image = label2rgb(self.image_slic, self.image, kind="avg")
 
         if FILTER == "slic-500":
 
             self.image_slic = slic(self.image, n_segments=500, compactness=5)
-            self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
+            self.image = label2rgb(self.image_slic, self.image, kind="avg")
 
         if FILTER == "slic-1000":
 
             self.image_slic = slic(self.image, n_segments=1000, compactness=5)
-            self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
+            self.image = label2rgb(self.image_slic, self.image, kind="avg")
 
         if FILTER == "solarize":
 
             self.image = Image.fromarray(self.image)
-            self.image = ImageOps.solarize(self.image, threshold = 130)  
+            self.image = ImageOps.solarize(self.image, threshold=130)
             self.image = np.array(self.image)
 
         if FILTER == "color":

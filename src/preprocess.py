@@ -97,6 +97,5 @@ if __name__ == "__main__":
 
         os.mkdir(path)
 
-
     for mode in ["train", "val", "test"]:
         preprocess4GAN(mode=mode, config=config)

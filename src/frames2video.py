@@ -46,7 +46,10 @@ def frames2videos():
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
     video_writer = cv2.VideoWriter(
-        f"{base_path}/{FRAMES_FOLDER}.mp4", fourcc, FPS, (enhanced_width, enhanced_height)
+        f"{base_path}/{FRAMES_FOLDER}.mp4",
+        fourcc,
+        FPS,
+        (enhanced_width, enhanced_height),
     )
 
     for plot_folder in plot_folders:
