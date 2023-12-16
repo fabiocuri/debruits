@@ -76,6 +76,7 @@ def frames2videos():
         plot_files = [pf for pf in plot_files if pf.endswith(".png")]
 
         for pf in plot_files:
+
             frame_path = os.path.join(path, pf)
             frame = cv2.imread(frame_path)
             video_writer.write(frame)

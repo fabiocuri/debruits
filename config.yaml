@@ -9,10 +9,10 @@ model_config:
   SATURATION: 1
   N_EPOCHS: 1
   INPUT_FILTER: "edges"
-  TARGET_FILTER: "slic-100"
+  TARGET_FILTER: "sharpen"
 frames_to_video_config:
   FPS: 5
 folder: "bairrodorego"
 enhanced_width: 1920
 enhanced_height: 1080
-overlap-results: ["slic-500_slic-100", "slic-500_slic-100"]
+overlap-results: ["edges_sharpen", "slic-100_solarize"]

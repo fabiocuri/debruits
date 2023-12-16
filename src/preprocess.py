@@ -55,7 +55,7 @@ def load_images(config, mode, paths):
     )
 
     src_list, tar_list = [], []
-    for file in tqdm(sorted_file_paths):
+    for file in sorted_file_paths:
         imagehandler_frame = ImageClass(config=config, input_path=file)
         imagehandler_frame.read_image()
         pixels = img_to_array(imagehandler_frame.image)

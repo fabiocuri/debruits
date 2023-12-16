@@ -43,6 +43,9 @@ case "$argument" in
     "overlap-results")
         $PYTHON_VERSION "$src_path/overlap_results.py"
         ;;
+    "split-video")
+        $PYTHON_VERSION "$src_path/split_video.py" /home/fabio/Videos/untitled.mpg
+        ;;
     "all")
         $PYTHON_VERSION "$src_path/preprocess.py"
         $PYTHON_VERSION "$src_path/train.py"

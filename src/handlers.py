@@ -140,6 +140,11 @@ class ImageClass:
             self.image_slic = slic(self.image, n_segments=500, compactness=5)
             self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
 
+        if FILTER == "slic-1000":
+
+            self.image_slic = slic(self.image, n_segments=1000, compactness=5)
+            self.image = label2rgb(self.image_slic, self.image, kind = 'avg')
+
         if FILTER == "solarize":
 
             self.image = Image.fromarray(self.image)

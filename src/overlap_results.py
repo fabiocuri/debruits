@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
         image_1 = cv2.imread(f"./data/{config['folder']}/image/output/{overlap_folders[1]}/inference/{file}")
 
-        overlap = cv2.addWeighted(image_0, 1, image_1, 0.3, 0)
+        overlap = cv2.addWeighted(image_0, 1, image_1, 1, 0)
 
         Path(output_path).mkdir(parents=True, exist_ok=True)
         cv2.imwrite(f"{output_path}/{file}", overlap)

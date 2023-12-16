@@ -13,7 +13,7 @@ def extract_frames(input_video_path, frame_rate=5):
 
     output_folder_path = "/".join(input_video_path.split("/")[:-1])
 
-    video_name = input_video_path.split("/")[-1].replace(".mp4", "")
+    video_name = input_video_path.split("/")[-1].replace(".mpg", "")
 
     if not os.path.exists(f"{output_folder_path}/{video_name}"):
 
