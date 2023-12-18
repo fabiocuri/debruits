@@ -21,11 +21,23 @@ from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
 
+def load_compressed(data, file):
+
+    data = load(f"./data/{data}/image/input/model_data/{file}")
+
+    X1, X2 = data["arr_0"], data["arr_1"]
+
+    X1 = (X1 - 127.5) / 127.5
+    X2 = (X2 - 127.5) / 127.5
+
+    return [X1, X2]
+
+
 class Train:
 
     """
     Description: trains a GAN.
-    Output: .h5 models and inferred test images.
+    Output: .h5 models and infered test images.
     """
 
     def __init__(self):
@@ -45,8 +57,8 @@ class Train:
             f"./data/{self.data}/image/output/{self.INPUT_FILTER}_{self.TARGET_FILTER}"
         )
 
-        self.train_dataset = self.load_compressed("train.npz")
-        self.test_dataset = self.load_compressed("test.npz")
+        self.train_dataset = load_compressed(self.data, "train.npz")
+        self.test_dataset = load_compressed(self.data, "test.npz")
 
         if self.MODE == "start":
 
@@ -90,17 +102,6 @@ class Train:
             )
 
         self.train_gan()
-
-    def load_compressed(self, file):
-
-        data = load(f"./data/{self.data}/image/input/model_data/{file}")
-
-        X1, X2 = data["arr_0"], data["arr_1"]
-
-        X1 = (X1 - 127.5) / 127.5
-        X2 = (X2 - 127.5) / 127.5
-
-        return [X1, X2]
 
     def define_discriminator(self):
 
@@ -301,8 +302,12 @@ class Train:
                     pyplot.savefig(filename1)
                     pyplot.close()
 
-        self.discriminator_model.save(f"{self.models_path}/trained_models/discriminator_model.h5")
-        self.generator_model.save(f"{self.models_path}/trained_models/generator_model.h5")
+        self.discriminator_model.save(
+            f"{self.models_path}/trained_models/discriminator_model.h5"
+        )
+        self.generator_model.save(
+            f"{self.models_path}/trained_models/generator_model.h5"
+        )
         self.gan_model.save(f"{self.models_path}/trained_models/gan_model.h5")
 
 

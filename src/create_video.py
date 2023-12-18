@@ -5,6 +5,7 @@ import cv2
 import yaml
 from tqdm import tqdm
 
+
 class Frames2Videos:
 
     """
@@ -16,7 +17,7 @@ class Frames2Videos:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.FOLDER = list(sys.argv)[-1]
+        self.SCRIPT_FOLDER = list(sys.argv)[-1]
 
         self.data = self.config["data"]
         self.FPS = self.config["video_config"]["FPS"]
@@ -39,13 +40,20 @@ class Frames2Videos:
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
         video_writer = cv2.VideoWriter(
-            f"{self.models_path}/{self.FOLDER}.mp4",
+            f"{self.models_path}/{self.SCRIPT_FOLDER}.mp4",
             fourcc,
             self.FPS,
             (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
         )
 
-        for plot_folder in tqdm([os.path.join(self.models_path, folder) for folder in os.listdir(self.models_path) if os.path.isdir(os.path.join(self.models_path, folder)) and folder.startswith(self.FOLDER)]):
+        for plot_folder in tqdm(
+            [
+                os.path.join(self.models_path, folder)
+                for folder in os.listdir(self.models_path)
+                if os.path.isdir(os.path.join(self.models_path, folder))
+                and folder.startswith(self.FOLDER)
+            ]
+        ):
 
             for pf in sorted(list(os.listdir(plot_folder)), key=self.sort_key):
 

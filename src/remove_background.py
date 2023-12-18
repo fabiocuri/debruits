@@ -1,54 +1,63 @@
-from rembg import remove 
-from PIL import Image 
-import glob
 import os
-import sys
-from tqdm import tqdm
+from pathlib import Path
+
 import cv2
 import yaml
+from PIL import Image
+from rembg import remove
 
-def main(path):
 
-    config = yaml.load(open("./config.yaml"), Loader=yaml.FullLoader)
+class RemoveBackground:
 
-    video_name = path.split("/")[-1]
+    """
+    Description: removes the background of a video.
+    Output: video with no background.
+    """
 
-    images = [f for f in glob.glob(f"{path}/*.jpg")]
-    images = list(sorted(images))
+    def __init__(self):
 
-    output_path = f"{path}/no_background"
+        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-    if not os.path.exists(output_path):
+        self.REMOVE_BACKGROUND = self.config["system_config"]["REMOVE_BACKGROUND"]
+        self.FPS = self.config["video_config"]["FPS"]
+        self.ENHANCED_WIDTH = self.config["image_config"]["ENHANCED_WIDTH"]
+        self.ENHANCED_HEIGHT = self.config["image_config"]["ENHANCED_HEIGHT"]
 
-        os.makedirs(output_path)
+        self.folder_path = os.path.dirname(self.REMOVE_BACKGROUND)
+        self.output_path = f"{self.folder_path}/no_background"
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        Path(self.output_path).mkdir(parents=True, exist_ok=True)
 
-    FPS = config["frames_to_video_config"]["FPS"]
+        self.remove()
 
-    enhanced_width = config["enhanced_width"]
-    enhanced_height = config["enhanced_height"]
+    def sort_key(self, item):
+        return int(item.split(".png")[0].split("_")[1])
 
-    video_writer = cv2.VideoWriter(
-        f"{output_path}/{video_name}.mp4",
-        fourcc,
-        FPS,
-        (enhanced_width, enhanced_height),
-    )
+    def remove(self):
 
-    for image in tqdm(images):
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
-        file_name = image.split("/")[-1].replace("jpg", "png")
-        
-        input = Image.open(image)
-        output = remove(input) 
-        output.save(f"{output_path}/{file_name}")
+        video_writer = cv2.VideoWriter(
+            f"{self.output_path}/no_background.mp4",
+            fourcc,
+            self.FPS,
+            (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
+        )
 
-        frame = cv2.imread(f"{output_path}/{file_name}")
-        video_writer.write(frame)
+        for image in sorted(
+            list(os.listdir(self.REMOVE_BACKGROUND)), key=self.sort_key
+        ):
 
-    video_writer.release()
+            input = Image.open(os.path.join(self.REMOVE_BACKGROUND, image))
+            output = remove(input)
+            output.save(f"{self.output_path}/{image}")
+
+            frame = cv2.imread(f"{self.output_path}/{image}")
+            video_writer.write(frame)
+
+        video_writer.release()
+
 
 if __name__ == "__main__":
 
-    main(sys.argv[-1])
+    RemoveBackground()

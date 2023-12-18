@@ -5,10 +5,11 @@ import yaml
 from PIL import Image, ImageEnhance
 from tqdm import tqdm
 
+
 class SuperResolution:
 
     """
-    Description: improves the quality of the inferred images.
+    Description: improves the quality of the infered images.
     Output: improved images.
     """
 
@@ -16,7 +17,7 @@ class SuperResolution:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.FOLDER = list(sys.argv)[-1]
+        self.SCRIPT_FOLDER = list(sys.argv)[-1]
 
         self.data = self.config["data"]
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
@@ -32,7 +33,14 @@ class SuperResolution:
 
     def improve(self):
 
-        for plot_folder in tqdm([os.path.join(self.models_path, folder) for folder in os.listdir(self.models_path) if os.path.isdir(os.path.join(self.models_path, folder)) and folder.startswith(self.FOLDER)]):
+        for plot_folder in tqdm(
+            [
+                os.path.join(self.models_path, folder)
+                for folder in os.listdir(self.models_path)
+                if os.path.isdir(os.path.join(self.models_path, folder))
+                and folder.startswith(self.SCRIPT_FOLDER)
+            ]
+        ):
 
             for pf in os.listdir(plot_folder):
 
@@ -49,6 +57,7 @@ class SuperResolution:
                 improved_quality_image = enhancer.enhance(quality_factor)
 
                 improved_quality_image.save(image_path)
+
 
 if __name__ == "__main__":
 

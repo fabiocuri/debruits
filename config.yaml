@@ -1,3 +1,10 @@
+system_config:
+  PIP_VERSION: pip3
+  PYTHON_VERSION: python3
+  SRC_PATH: ./src
+  SCRIPT_FOLDER: inference
+  VIDEO_PATH: /home/fabio/Videos/test.mp4
+  REMOVE_BACKGROUND: /home/fabio/Videos/frames
 data: "bairrodorego"
 image_config:
   DIM: 512
@@ -7,14 +14,10 @@ image_config:
 video_config:
   FPS: 5
 model_config:
-  MODE: "continue"
+  MODE: "start"
   INPUT_FILTER: "original"
-  TARGET_FILTER: "solarize"
+  TARGET_FILTER: "slic-1000"
   N_EPOCHS: 1
   LEARNING_RATE: 0.0002
   BATCH_SIZE: 1
-system_config:
-  PIP_VERSION: pip3
-  PYTHON_VERSION: python3
-  SRC_PATH: ./src
-overlap-results: ["edges_sharpen", "slic-100_solarize"]
+overlap-images: ["original_solarize", "original_slic-1000"]

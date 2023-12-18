@@ -1,41 +1,55 @@
 import os
-import sys
+from pathlib import Path
 
 import cv2
+import yaml
 
 
-def extract_frames(input_video_path, frame_rate=5):
-    video_capture = cv2.VideoCapture(input_video_path)
-    frames_per_second = int(video_capture.get(5))  # Get frames per second of the video
+class SplitVideo:
 
-    # Calculate the frame interval based on the desired frame rate
-    frame_interval = int(frames_per_second / frame_rate)
+    """
+    Description: splits a video into several frames.
+    Output: frames.
+    """
 
-    output_folder_path = "/".join(input_video_path.split("/")[:-1])
+    def __init__(self):
 
-    video_name = input_video_path.split("/")[-1].replace(".mp4", "")
+        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-    if not os.path.exists(f"{output_folder_path}/{video_name}"):
+        self.VIDEO_PATH = self.config["system_config"]["VIDEO_PATH"]
+        self.FPS = self.config["video_config"]["FPS"]
 
-        os.makedirs(f"{output_folder_path}/{video_name}")
+        self.folder_path = os.path.dirname(self.VIDEO_PATH)
+        self.output_path = f"{self.folder_path}/frames"
 
-    frame_count = 0
-    while True:
-        ret, frame = video_capture.read()
+        Path(self.output_path).mkdir(parents=True, exist_ok=True)
 
-        if not ret:
-            break
+        self.extract_frames()
 
-        # Save frame if it's a multiple of frame_interval
-        if frame_count % frame_interval == 0:
-            frame_filename = f"{output_folder_path}/{video_name}/frame_{frame_count // frame_interval}.jpg"
-            cv2.imwrite(frame_filename, frame)
+    def extract_frames(self):
 
-        frame_count += 1
+        video_capture = cv2.VideoCapture(self.VIDEO_PATH)
+        frames_per_second = int(video_capture.get(self.FPS))
+        frame_interval = int(frames_per_second / self.FPS)
 
-    video_capture.release()
+        frame_count = 0
+        while True:
+            ret, frame = video_capture.read()
+
+            if not ret:
+                break
+
+            if frame_count % frame_interval == 0:
+                frame_filename = (
+                    f"{self.output_path}/frame_{frame_count // frame_interval}.png"
+                )
+                cv2.imwrite(frame_filename, frame)
+
+            frame_count += 1
+
+        video_capture.release()
 
 
 if __name__ == "__main__":
 
-    extract_frames(sys.argv[-1])
+    SplitVideo()

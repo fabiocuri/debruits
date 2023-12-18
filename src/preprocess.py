@@ -59,13 +59,13 @@ class Preprocess:
 
         for file in tqdm(glob.glob(f"{self.image_path}/frames/{mode}/*")):
 
-            input_img = ImageClass(config=self.config, input_path=file, mode=mode)
+            input_img = ImageClass(config=self.config, input_path=file)
             input_img.read_image()
             input_img.resize((self.IMAGE_DIM, self.IMAGE_DIM))
             input_img.get_image_name()
             input_img.input_filter()
 
-            target_img = ImageClass(config=self.config, input_path=file, mode=mode)
+            target_img = ImageClass(config=self.config, input_path=file)
             target_img.read_image()
             target_img.resize((self.IMAGE_DIM, self.IMAGE_DIM))
             target_img.get_image_name()
@@ -74,7 +74,6 @@ class Preprocess:
             imagehandler_concat = ImageClass(
                 config=self.config,
                 cv2image=cv2.hconcat([input_img.image, target_img.image]),
-                mode=mode,
             )
             imagehandler_concat.read_image()
             imagehandler_concat.get_image_name(
