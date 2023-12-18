@@ -8,7 +8,6 @@ from scipy.ndimage import laplace
 from skimage.color import label2rgb
 from skimage.segmentation import slic
 
-
 class VideoClass:
     """
     A class that reads, preprocesses and converts videos.
@@ -94,10 +93,7 @@ class ImageClass:
         self.mode = mode
         self.cv2image = cv2image
 
-        self.BRIGHTNESS = self.config["model_config"]["BRIGHTNESS"]
-        self.CONTRAST = self.config["model_config"]["CONTRAST"]
-        self.BLUR = self.config["model_config"]["BLUR"]
-        self.SATURATION = self.config["model_config"]["SATURATION"]
+        self.BLUR = self.config["image_config"]["BLUR"]
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
 

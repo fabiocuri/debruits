@@ -21,341 +21,291 @@ from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
 
-def define_discriminator(image_shape):
-
-    init = RandomNormal(stddev=0.02)
-
-    in_src_image = Input(shape=image_shape)
-    in_target_image = Input(shape=image_shape)
-
-    merged = Concatenate()([in_src_image, in_target_image])
-
-    d = Conv2D(64, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(
-        merged
-    )
-    d = LeakyReLU(alpha=0.2)(d)
-
-    d = Conv2D(128, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(d)
-    d = BatchNormalization()(d)
-    d = LeakyReLU(alpha=0.2)(d)
-
-    d = Conv2D(256, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(d)
-    d = BatchNormalization()(d)
-    d = LeakyReLU(alpha=0.2)(d)
-
-    d = Conv2D(512, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(d)
-    d = BatchNormalization()(d)
-    d = LeakyReLU(alpha=0.2)(d)
-
-    d = Conv2D(512, (4, 4), padding="same", kernel_initializer=init)(d)
-    d = BatchNormalization()(d)
-    d = LeakyReLU(alpha=0.2)(d)
-
-    d = Conv2D(1, (4, 4), padding="same", kernel_initializer=init)(d)
-    patch_out = Activation("sigmoid")(d)
-
-    model = Model([in_src_image, in_target_image], patch_out)
-
-    opt = Adam(learning_rate=0.0001, beta_1=0.5)
-    model.compile(loss="binary_crossentropy", optimizer=opt, loss_weights=[0.5])
-
-    return model
-
-
-def define_encoder_block(layer_in, n_filters, batchnorm=True):
-
-    init = RandomNormal(stddev=0.02)
-
-    g = Conv2D(
-        n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
-    )(layer_in)
-
-    if batchnorm:
-        g = BatchNormalization()(g, training=True)
-
-    g = LeakyReLU(alpha=0.2)(g)
-
-    return g
-
-
-def decoder_block(layer_in, skip_in, n_filters, dropout=True):
-
-    init = RandomNormal(stddev=0.02)
-
-    g = Conv2DTranspose(
-        n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
-    )(layer_in)
-    g = BatchNormalization()(g, training=True)
-
-    if dropout:
-        g = Dropout(0.5)(g, training=True)
-
-    g = Concatenate()([g, skip_in])
-    g = Activation("relu")(g)
-
-    return g
-
-
-def define_generator(image_shape=(1024, 1024, 3)):
-
-    init = RandomNormal(stddev=0.02)
-
-    in_image = Input(shape=image_shape)
-
-    e1 = define_encoder_block(in_image, 64, batchnorm=False)
-    e2 = define_encoder_block(e1, 128)
-    e3 = define_encoder_block(e2, 256)
-    e4 = define_encoder_block(e3, 512)
-    e5 = define_encoder_block(e4, 512)
-    e6 = define_encoder_block(e5, 512)
-    e7 = define_encoder_block(e6, 512)
-
-    b = Conv2D(512, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(e7)
-    b = Activation("relu")(b)
-
-    d1 = decoder_block(b, e7, 512)
-    d2 = decoder_block(d1, e6, 512)
-    d3 = decoder_block(d2, e5, 512)
-    d4 = decoder_block(d3, e4, 512, dropout=False)
-    d5 = decoder_block(d4, e3, 256, dropout=False)
-    d6 = decoder_block(d5, e2, 128, dropout=False)
-    d7 = decoder_block(d6, e1, 64, dropout=False)
-
-    g = Conv2DTranspose(
-        3, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
-    )(d7)
-    out_image = Activation("tanh")(g)
-
-    model = Model(in_image, out_image)
-
-    return model
-
-
-def define_gan(g_model, d_model, image_shape):
-
-    d_model.trainable = False
-
-    in_src = Input(shape=image_shape)
-
-    gen_out = g_model(in_src)
-
-    dis_out = d_model([in_src, gen_out])
-
-    model = Model(in_src, [dis_out, gen_out])
-
-    opt = Adam(lr=0.001, beta_1=0.5)
-    model.compile(
-        loss=["binary_crossentropy", "mae"], optimizer=opt, loss_weights=[1, 100]
-    )
-
-    return model
-
-
-def load_real_samples(filename):
-
-    data = load(filename)
-
-    X1, X2 = data["arr_0"], data["arr_1"]
-
-    X1 = (X1 - 127.5) / 127.5
-    X2 = (X2 - 127.5) / 127.5
-
-    return [X1, X2]
-
-
-def generate_real_samples(dataset, n_samples, patch_shape):
-
-    trainA, trainB = dataset
-    ix = randint(0, trainA.shape[0], n_samples)
-
-    X1, X2 = trainA[ix], trainB[ix]
-
-    y = ones((n_samples, patch_shape, patch_shape, 1))
-
-    return [X1, X2], y
-
-
-def generate_fake_samples(g_model, samples, patch_shape):
-
-    X = g_model.predict(samples)
-    y = zeros((len(X), patch_shape, patch_shape, 1))
-
-    return X, y
-
-
-def summarize_performance(step, g_model, dataset, model_config, folder, n_samples=3):
-
-    [X_realA, X_realB], _ = generate_real_samples(dataset, n_samples, 1)
-    X_fakeB, _ = generate_fake_samples(g_model, X_realA, 1)
-    X_realA = (X_realA + 1) / 2.0
-    X_realB = (X_realB + 1) / 2.0
-    X_fakeB = (X_fakeB + 1) / 2.0
-
-    for i in range(n_samples):
-
-        pyplot.subplot(3, n_samples, 1 + i)
-        pyplot.axis("off")
-        pyplot.imshow(X_realA[i])
-
-    for i in range(n_samples):
-
-        pyplot.subplot(3, n_samples, 1 + n_samples + i)
-        pyplot.axis("off")
-        pyplot.imshow(X_fakeB[i])
-
-    for i in range(n_samples):
-
-        pyplot.subplot(3, n_samples, 1 + n_samples * 2 + i)
-        pyplot.axis("off")
-        pyplot.imshow(X_realB[i])
-
-    filename = (
-        f"./data/{folder}/image/output/{model_config}/model_evolution/plot_%06d.png"
-        % (step + 1)
-    )
-    pyplot.savefig(filename)
-    pyplot.close()
-
-
-def train(
-    d_model,
-    g_model,
-    gan_model,
-    train_dataset,
-    val_dataset,
-    test_dataset,
-    stop_step,
-    folder,
-    model_config,
-    N_EPOCHS=2,
-    n_batch=1,
-):
-
-    n_patch = d_model.output_shape[1]
-
-    trainA, _ = train_dataset
-
-    bat_per_epo = int(len(trainA) / n_batch)
-
-    n_steps = bat_per_epo * N_EPOCHS
-
-    for i in tqdm(list(range(n_steps))):
-
-        [X_realA, X_realB], y_real = generate_real_samples(
-            train_dataset, n_batch, n_patch
+class Train:
+
+    """
+    Description: trains a GAN.
+    Output: .h5 models and inferred test images.
+    """
+
+    def __init__(self):
+
+        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+
+        self.data = self.config["data"]
+        self.MODE = self.config["model_config"]["MODE"]
+        self.IMAGE_DIM = self.config["image_config"]["DIM"]
+        self.LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
+        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
+        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
+        self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
+        self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
+
+        self.models_path = (
+            f"./data/{self.data}/image/output/{self.INPUT_FILTER}_{self.TARGET_FILTER}"
         )
 
-        X_fakeB, y_fake = generate_fake_samples(g_model, X_realA, n_patch)
+        self.train_dataset = self.load_compressed("train.npz")
+        self.test_dataset = self.load_compressed("test.npz")
 
-        _ = d_model.train_on_batch([X_realA, X_realB], y_real)
+        if self.MODE == "start":
 
-        _ = d_model.train_on_batch([X_realA, X_fakeB], y_fake)
+            self.define_discriminator()
+            self.define_generator()
+            self.define_gan()
 
-        _, _, _ = gan_model.train_on_batch(X_realA, [y_real, X_realB])
+            self.stop_step = 0
 
-        if (i + 1) % 10 == 0:
-
-            testA, _ = test_dataset
-
-            for ix in range(testA.shape[0]):
-
-                X_realA = testA[[ix]]
-                X_fakeB = g_model.predict(X_realA)
-                X_fakeB = (X_fakeB + 1) / 2.0
-                X_fakeB = X_fakeB.reshape(1024, 1024, 3)
-
-                pyplot.axis("off")
-                pyplot.imshow(X_fakeB)
-
-                Path(f"./data/{folder}/image/output/{model_config}/plot_{ix}").mkdir(
-                    parents=True, exist_ok=True
-                )
-
-                i_step = i + stop_step
-
-                filename1 = f"./data/{folder}/image/output/{model_config}/plot_{ix}/step_{i_step}.png"
-                pyplot.savefig(filename1)
-                pyplot.close()
-
-            Path(f"./data/{folder}/image/output/{model_config}/model_evolution").mkdir(
+            Path(f"{self.models_path}/trained_models/").mkdir(
                 parents=True, exist_ok=True
             )
 
-            summarize_performance(
-                i + stop_step, g_model, val_dataset, model_config, folder
+            Path(f"{self.models_path}/model_evolution/").mkdir(
+                parents=True, exist_ok=True
             )
 
-    Path(f"./data/{folder}/image/output/{model_config}/trained_models/").mkdir(
-        parents=True, exist_ok=True
-    )
-    d_model.save(
-        f"./data/{folder}/image/output/{model_config}/trained_models/d_model.h5"
-    )
-    g_model.save(
-        f"./data/{folder}/image/output/{model_config}/trained_models/g_model.h5"
-    )
-    gan_model.save(
-        f"./data/{folder}/image/output/{model_config}/trained_models/gan_model.h5"
-    )
+        if self.MODE == "continue":
+
+            self.discriminator_model = load_model(
+                f"{self.models_path}/trained_models/discriminator_model.h5"
+            )
+            self.generator_model = load_model(
+                f"{self.models_path}/trained_models/generator_model.h5"
+            )
+            self.gan_model = load_model(
+                f"{self.models_path}/trained_models/gan_model.h5"
+            )
+
+            self.stop_step = int(
+                sorted(
+                    [
+                        int(x.split(".png")[0].split("step_")[1])
+                        for x in [
+                            x
+                            for x in os.listdir(f"{self.models_path}/plot_0/")
+                            if x.endswith(".png")
+                        ]
+                    ]
+                )[-1]
+            )
+
+        self.train_gan()
+
+    def load_compressed(self, file):
+
+        data = load(f"./data/{self.data}/image/input/model_data/{file}")
+
+        X1, X2 = data["arr_0"], data["arr_1"]
+
+        X1 = (X1 - 127.5) / 127.5
+        X2 = (X2 - 127.5) / 127.5
+
+        return [X1, X2]
+
+    def define_discriminator(self):
+
+        init = RandomNormal(stddev=0.02)
+
+        self.train_dataset[0].shape[1:]
+
+        in_src_image = Input(shape=self.train_dataset[0].shape[1:])
+        in_target_image = Input(shape=self.train_dataset[0].shape[1:])
+
+        merged = Concatenate()([in_src_image, in_target_image])
+
+        d = Conv2D(64, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(
+            merged
+        )
+        d = LeakyReLU(alpha=0.2)(d)
+
+        d = Conv2D(
+            128, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(d)
+        d = BatchNormalization()(d)
+        d = LeakyReLU(alpha=0.2)(d)
+
+        d = Conv2D(
+            256, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(d)
+        d = BatchNormalization()(d)
+        d = LeakyReLU(alpha=0.2)(d)
+
+        d = Conv2D(
+            512, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(d)
+        d = BatchNormalization()(d)
+        d = LeakyReLU(alpha=0.2)(d)
+
+        d = Conv2D(512, (4, 4), padding="same", kernel_initializer=init)(d)
+        d = BatchNormalization()(d)
+        d = LeakyReLU(alpha=0.2)(d)
+
+        d = Conv2D(1, (4, 4), padding="same", kernel_initializer=init)(d)
+        patch_out = Activation("sigmoid")(d)
+
+        self.discriminator_model = Model([in_src_image, in_target_image], patch_out)
+        self.discriminator_model.compile(
+            loss="binary_crossentropy",
+            optimizer=Adam(learning_rate=self.LEARNING_RATE, beta_1=0.5),
+            loss_weights=[0.5],
+        )
+
+    def define_encoder_block(self, layer_in, n_filters, batchnorm=True):
+
+        init = RandomNormal(stddev=0.02)
+
+        g = Conv2D(
+            n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(layer_in)
+
+        if batchnorm:
+            g = BatchNormalization()(g, training=True)
+
+        g = LeakyReLU(alpha=0.2)(g)
+
+        return g
+
+    def decoder_block(self, layer_in, skip_in, n_filters, dropout=True):
+
+        init = RandomNormal(stddev=0.02)
+
+        g = Conv2DTranspose(
+            n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(layer_in)
+        g = BatchNormalization()(g, training=True)
+
+        if dropout:
+            g = Dropout(0.5)(g, training=True)
+
+        g = Concatenate()([g, skip_in])
+        g = Activation("relu")(g)
+
+        return g
+
+    def define_generator(self):
+
+        init = RandomNormal(stddev=0.02)
+
+        in_image = Input(shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
+
+        e1 = self.define_encoder_block(in_image, 64, batchnorm=False)
+        e2 = self.define_encoder_block(e1, 128)
+        e3 = self.define_encoder_block(e2, 256)
+        e4 = self.define_encoder_block(e3, 512)
+        e5 = self.define_encoder_block(e4, 512)
+        e6 = self.define_encoder_block(e5, 512)
+        e7 = self.define_encoder_block(e6, 512)
+
+        b = Conv2D(
+            512, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(e7)
+        b = Activation("relu")(b)
+
+        d1 = self.decoder_block(b, e7, 512)
+        d2 = self.decoder_block(d1, e6, 512)
+        d3 = self.decoder_block(d2, e5, 512)
+        d4 = self.decoder_block(d3, e4, 512, dropout=False)
+        d5 = self.decoder_block(d4, e3, 256, dropout=False)
+        d6 = self.decoder_block(d5, e2, 128, dropout=False)
+        d7 = self.decoder_block(d6, e1, 64, dropout=False)
+
+        g = Conv2DTranspose(
+            3, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
+        )(d7)
+        out_image = Activation("tanh")(g)
+
+        self.generator_model = Model(in_image, out_image)
+
+    def define_gan(self):
+
+        self.discriminator_model.trainable = False
+
+        in_src = Input(shape=self.train_dataset[0].shape[1:])
+
+        gen_out = self.generator_model(in_src)
+
+        dis_out = self.discriminator_model([in_src, gen_out])
+
+        self.gan_model = Model(in_src, [dis_out, gen_out])
+        self.gan_model.compile(
+            loss=["binary_crossentropy", "mae"],
+            optimizer=Adam(lr=self.LEARNING_RATE, beta_1=0.5),
+            loss_weights=[1, 100],
+        )
+
+    def generate_real_samples(self, dataset, n_samples, patch_shape):
+
+        trainA, trainB = dataset
+        ix = randint(0, trainA.shape[0], n_samples)
+
+        X1, X2 = trainA[ix], trainB[ix]
+
+        y = ones((n_samples, patch_shape, patch_shape, 1))
+
+        return [X1, X2], y
+
+    def generate_fake_samples(self, g_model, samples, patch_shape):
+
+        X = g_model.predict(samples)
+        y = zeros((len(X), patch_shape, patch_shape, 1))
+
+        return X, y
+
+    def train_gan(self):
+
+        n_patch = self.discriminator_model.output_shape[1]
+
+        trainA, _ = self.train_dataset
+
+        bat_per_epo = int(len(trainA) / self.BATCH_SIZE)
+
+        n_steps = bat_per_epo * self.N_EPOCHS
+
+        for i in tqdm(list(range(n_steps))):
+
+            [X_realA, X_realB], y_real = self.generate_real_samples(
+                self.train_dataset, self.BATCH_SIZE, n_patch
+            )
+
+            X_fakeB, y_fake = self.generate_fake_samples(
+                self.generator_model, X_realA, n_patch
+            )
+
+            _ = self.discriminator_model.train_on_batch([X_realA, X_realB], y_real)
+
+            _ = self.discriminator_model.train_on_batch([X_realA, X_fakeB], y_fake)
+
+            _, _, _ = self.gan_model.train_on_batch(X_realA, [y_real, X_realB])
+
+            if (i + 1) % 10 == 0:
+
+                testA, _ = self.test_dataset
+
+                for ix in range(testA.shape[0]):
+
+                    X_realA = testA[[ix]]
+                    X_fakeB = self.generator_model.predict(X_realA)
+                    X_fakeB = (X_fakeB + 1) / 2.0
+                    X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
+
+                    pyplot.axis("off")
+                    pyplot.imshow(X_fakeB)
+
+                    Path(f"{self.models_path}/plot_{ix}").mkdir(
+                        parents=True, exist_ok=True
+                    )
+
+                    i_step = i + self.stop_step
+
+                    filename1 = f"{self.models_path}/plot_{ix}/step_{i_step}.png"
+                    pyplot.savefig(filename1)
+                    pyplot.close()
+
+        self.discriminator_model.save(f"{self.models_path}/trained_models/discriminator_model.h5")
+        self.generator_model.save(f"{self.models_path}/trained_models/generator_model.h5")
+        self.gan_model.save(f"{self.models_path}/trained_models/gan_model.h5")
 
 
 if __name__ == "__main__":
 
-    config = yaml.load(open("./config.yaml"), Loader=yaml.FullLoader)
-    folder = config["folder"]
-    MODE = config["model_config"]["MODE"]
-
-    INPUT_FILTER = config["model_config"]["INPUT_FILTER"]
-    TARGET_FILTER = config["model_config"]["TARGET_FILTER"]
-
-    model_config = f"{INPUT_FILTER}_{TARGET_FILTER}"
-
-    N_EPOCHS = config["model_config"]["N_EPOCHS"]
-    MODE = config["model_config"]["MODE"]
-
-    train_dataset = load_real_samples(
-        f"./data/{folder}/image/input/model_data/train.npz"
-    )
-    val_dataset = load_real_samples(f"./data/{folder}/image/input/model_data/val.npz")
-    test_dataset = load_real_samples(f"./data/{folder}/image/input/model_data/test.npz")
-
-    image_shape = train_dataset[0].shape[1:]
-
-    if MODE == "start":
-
-        d_model = define_discriminator(image_shape)
-        g_model = define_generator(image_shape)
-        gan_model = define_gan(g_model, d_model, image_shape)
-
-        stop_step = 0
-
-    if MODE == "continue":
-
-        d_model = load_model(
-            f"./data/{folder}/image/output/{model_config}/trained_models/d_model.h5"
-        )
-        g_model = load_model(
-            f"./data/{folder}/image/output/{model_config}/trained_models/g_model.h5"
-        )
-        gan_model = load_model(
-            f"./data/{folder}/image/output/{model_config}/trained_models/gan_model.h5"
-        )
-
-        stop_step = os.listdir(f"./data/{folder}/image/output/{model_config}/plot_0/")
-        stop_step = [x for x in stop_step if x.endswith(".png")]
-        stop_step = int(
-            sorted([int(x.split(".png")[0].split("step_")[1]) for x in stop_step])[-1]
-        )
-
-    train(
-        d_model,
-        g_model,
-        gan_model,
-        train_dataset,
-        val_dataset,
-        test_dataset,
-        stop_step,
-        folder,
-        model_config,
-        N_EPOCHS,
-    )
+    Train()
