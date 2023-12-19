@@ -2,12 +2,12 @@ system_config:
   PIP_VERSION: pip3
   PYTHON_VERSION: python3
   SRC_PATH: ./src
-  SCRIPT_FOLDER: inference
+  SCRIPT_FOLDER: plot
   VIDEO_PATH: /home/fabio/Videos/test.mp4
   REMOVE_BACKGROUND: /home/fabio/Videos/frames
 data: "bairrodorego"
 image_config:
-  DIM: 512
+  DIM: 256
   BLUR: 20
   ENHANCED_WIDTH: 1920
   ENHANCED_HEIGHT: 1080
@@ -16,7 +16,7 @@ video_config:
 model_config:
   MODE: "start"
   INPUT_FILTER: "original"
-  TARGET_FILTER: "slic-1000"
+  TARGET_FILTER: "edges"
   N_EPOCHS: 1
   LEARNING_RATE: 0.0002
   BATCH_SIZE: 1

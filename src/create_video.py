@@ -1,5 +1,4 @@
 import os
-import sys
 
 import cv2
 import yaml
@@ -17,7 +16,7 @@ class Frames2Videos:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.SCRIPT_FOLDER = list(sys.argv)[-1]
+        self.SCRIPT_FOLDER = self.config["system_config"]["SCRIPT_FOLDER"]
 
         self.data = self.config["data"]
         self.FPS = self.config["video_config"]["FPS"]
@@ -51,7 +50,7 @@ class Frames2Videos:
                 os.path.join(self.models_path, folder)
                 for folder in os.listdir(self.models_path)
                 if os.path.isdir(os.path.join(self.models_path, folder))
-                and folder.startswith(self.FOLDER)
+                and folder.startswith(self.SCRIPT_FOLDER)
             ]
         ):
 
