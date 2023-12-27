@@ -1,6 +1,7 @@
 import os
 from io import BytesIO
 
+import h5py
 import yaml
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -18,7 +19,11 @@ class GoogleDrive:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
+        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
+        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
+
         self.authenticate()
+        self.handle_folders()
 
     def authenticate(self):
 
@@ -29,6 +34,54 @@ class GoogleDrive:
             credentials_path, scopes=scope
         )
         self.drive_service = build("drive", "v3", credentials=credentials)
+
+    def handle_folders(self):
+
+        run = f"{self.INPUT_FILTER}_{self.TARGET_FILTER}"
+
+        # The main_id is the ID of the name of the dataset in Google Drive,
+        # i.e. the ID of "data/bairrodorego".
+        self.main_id = self.config["google_drive"]["main_id"]
+
+        self.input_id = self.create_folder(
+            parent_folder_id=self.main_id, folder_name="input"
+        )
+
+        self.train_folder_id = self.create_folder(
+            parent_folder_id=self.input_id, folder_name="train"
+        )
+
+        self.test_folder_id = self.create_folder(
+            parent_folder_id=self.input_id, folder_name="test"
+        )
+
+        self.model_data_id = self.create_folder(
+            parent_folder_id=self.main_id, folder_name="model_data"
+        )
+
+        self.model_data_run_id = self.create_folder(
+            parent_folder_id=self.model_data_id, folder_name=run
+        )
+
+        self.trained_models_id = self.create_folder(
+            parent_folder_id=self.main_id, folder_name="trained_models"
+        )
+
+        self.trained_models_run_id = self.create_folder(
+            parent_folder_id=self.trained_models_id, folder_name=run
+        )
+
+        self.output_id = self.create_folder(
+            parent_folder_id=self.main_id, folder_name="output"
+        )
+
+        self.output_run_id = self.create_folder(
+            parent_folder_id=self.output_id, folder_name=run
+        )
+
+        self.inference_folder_id = self.create_folder(
+            parent_folder_id=self.output_run_id, folder_name="inference"
+        )
 
     def create_folder(self, parent_folder_id, folder_name):
 
@@ -146,6 +199,7 @@ class GoogleDrive:
         with open(filename_local, "rb") as file:
 
             media = MediaIoBaseUpload(file, mimetype="image/png", resumable=True)
+
             request = self.drive_service.files().create(
                 body=file_metadata, media_body=media
             )
@@ -157,6 +211,21 @@ class GoogleDrive:
                 _, response = request.next_chunk()
 
         os.remove(filename_local)
+
+    def export_h5_file(self, folder_id, model, file_name):
+
+        h5_data = BytesIO()
+        model.save(h5_data, save_format='h5')
+        h5_data.seek(0)
+        
+        self.send_bytes_file(folder_id, h5_data, file_name, file_type='application/octet-stream')
+
+    def read_h5_file(self, item_id):
+
+        file_data = self.get_item(item_id)
+        h5_file = h5py.File(BytesIO(file_data), "r")
+
+        return h5_file
 
 
 if __name__ == "__main__":

@@ -12,12 +12,12 @@ class ImageClass:
     A class that reads and preprocesses images.
     """
 
-    def __init__(self, image_element, client_googledrive):
+    def __init__(self, image_element, drive_service):
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
         self.image_element = image_element
-        self.client_googledrive = client_googledrive
+        self.drive_service = drive_service
 
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.BLUR = self.config["image_config"]["BLUR"]
@@ -35,7 +35,7 @@ class ImageClass:
 
     def read_image(self):
 
-        image_bytes = self.client_googledrive.get_item(self.image_id)
+        image_bytes = self.drive_service.get_item(self.image_id)
         self.image = cv2.imdecode(
             np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR
         )

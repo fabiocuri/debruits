@@ -2,7 +2,7 @@ from io import BytesIO
 
 import numpy as np
 import yaml
-from numpy import ones, savez_compressed, zeros
+from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
 from tensorflow.keras.initializers import RandomNormal
@@ -19,6 +19,23 @@ from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
 from googledrive import GoogleDrive
+
+
+def load_npz(drive_service, dataset):
+
+    item_id = drive_service.get_item_id_by_name(
+        folder_id=drive_service.model_data_run_id, file_name=f"{dataset}.npz"
+    )
+
+    data = drive_service.get_item(item_id=item_id)
+    data = np.load(BytesIO(data))
+
+    X1, X2 = data["arr_0"], data["arr_1"]
+
+    X1 = (X1 - 127.5) / 127.5
+    X2 = (X2 - 127.5) / 127.5
+
+    return [X1, X2]
 
 
 class Train:
@@ -41,41 +58,10 @@ class Train:
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
 
-        self.client_googledrive = GoogleDrive()
+        self.drive_service = GoogleDrive()
 
-        # The main_id is the ID of the name of the dataset in Google Drive,
-        # i.e. the ID of "data/bairrodorego".
-        self.main_id = self.config["google_drive"]["main_id"]
-
-        self.trained_models_id = self.client_googledrive.create_folder(
-            parent_folder_id=self.main_id, folder_name="trained_models"
-        )
-
-        self.trained_models_run_id = self.client_googledrive.create_folder(
-            parent_folder_id=self.trained_models_id,
-            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
-        )
-
-        self.model_data_id = self.client_googledrive.create_folder(
-            parent_folder_id=self.main_id, folder_name="model_data"
-        )
-
-        self.model_data_run_id = self.client_googledrive.create_folder(
-            parent_folder_id=self.model_data_id,
-            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
-        )
-
-        self.output_id = self.client_googledrive.create_folder(
-            parent_folder_id=self.main_id, folder_name="output"
-        )
-
-        self.output_run_id = self.client_googledrive.create_folder(
-            parent_folder_id=self.output_id,
-            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
-        )
-
-        self.train_dataset = self.load_npz(dataset="train")
-        self.test_dataset = self.load_npz(dataset="test")
+        self.train_dataset = load_npz(drive_service=self.drive_service, dataset="train")
+        self.test_dataset = load_npz(drive_service=self.drive_service, dataset="test")
 
         testA, _ = self.test_dataset
 
@@ -83,30 +69,15 @@ class Train:
 
         for ix in range(testA.shape[0]):
 
-            self.images_ids[ix] = self.client_googledrive.create_folder(
-                parent_folder_id=self.output_run_id, folder_name=f"image_{ix}"
+            self.images_ids[ix] = self.drive_service.create_folder(
+                parent_folder_id=self.drive_service.output_run_id,
+                folder_name=f"image_{ix}",
             )
 
         self.define_discriminator()
         self.define_generator()
         self.define_gan()
         self.train_gan()
-
-    def load_npz(self, dataset):
-
-        item_id = self.client_googledrive.get_item_id_by_name(
-            folder_id=self.model_data_run_id, file_name=f"{dataset}.npz"
-        )
-
-        data = self.client_googledrive.get_item(item_id=item_id)
-        data = np.load(BytesIO(data))
-
-        X1, X2 = data["arr_0"], data["arr_1"]
-
-        X1 = (X1 - 127.5) / 127.5
-        X2 = (X2 - 127.5) / 127.5
-
-        return [X1, X2]
 
     def define_discriminator(self):
 
@@ -294,32 +265,26 @@ class Train:
                     X_fakeB = (X_fakeB + 1) / 2.0
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
-                    self.client_googledrive.export_image(
+                    self.drive_service.export_image(
                         folder_id=self.images_ids[ix], data=X_fakeB, idx=i
                     )
 
-        npz_data = BytesIO()
-        savez_compressed(npz_data, self.discriminator_model)
-        self.client_googledrive.send_bytes_file(
-            folder_id=self.trained_models_run_id,
-            bytes_io=npz_data,
-            file_name=f"discriminator_model.h5",
+        self.drive_service.export_h5_file(
+            folder_id=self.drive_service.trained_models_run_id,
+            model=self.discriminator_model,
+            file_name="discriminator_model.h5",
         )
 
-        npz_data = BytesIO()
-        savez_compressed(npz_data, self.generator_model)
-        self.client_googledrive.send_bytes_file(
-            folder_id=self.trained_models_run_id,
-            bytes_io=npz_data,
-            file_name=f"generator_model.h5",
+        self.drive_service.export_h5_file(
+            folder_id=self.drive_service.trained_models_run_id,
+            model=self.generator_model,
+            file_name="generator_model.h5",
         )
 
-        npz_data = BytesIO()
-        savez_compressed(npz_data, self.gan_model)
-        self.client_googledrive.send_bytes_file(
-            folder_id=self.trained_models_run_id,
-            bytes_io=npz_data,
-            file_name=f"gan_model.h5",
+        self.drive_service.export_h5_file(
+            folder_id=self.drive_service.trained_models_run_id,
+            model=self.gan_model,
+            file_name="gan_model.h5",
         )
 
 

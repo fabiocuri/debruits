@@ -1,11 +1,9 @@
-from pathlib import Path
-
 import yaml
-from tensorflow.keras.models import load_model
 from tqdm import tqdm
 
+from googledrive import GoogleDrive
 from handlers import ImageClass
-from train import load_compressed
+from train import load_npz
 
 
 class Inference:
@@ -19,25 +17,19 @@ class Inference:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.data = self.config["data"]
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
-
-        self.models_path = (
-            f"./data/{self.data}/image/output/{self.INPUT_FILTER}_{self.TARGET_FILTER}"
-        )
+        self.drive_service = GoogleDrive()
 
         self.infere()
 
     def infere(self):
 
-        Path(f"{self.models_path}/inference/").mkdir(parents=True, exist_ok=True)
+        trainA, trainB = load_npz(drive_service=self.drive_service, dataset="test")
 
-        trainA, trainB = load_compressed(self.data, "test.npz")
-
-        generator_model = load_model(
-            f"{self.models_path}/trained_models/generator_model.h5"
+        item_id = self.drive_service.get_item_id_by_name(
+            self.drive_service.trained_models_run_id, "generator_model.h5"
         )
+
+        generator_model = self.drive_service.read_h5_file(item_id)
 
         for ix in tqdm(range(0, trainA.shape[0], 1)):
 
@@ -47,11 +39,8 @@ class Inference:
 
             X_fakeB = (X_fakeB + 1) / 2.0
 
-            imagehandler_concat = ImageClass(config=self.config, cv2image=X_fakeB[0])
-            imagehandler_concat.read_image()
-            imagehandler_concat.get_image_name(image_name=f"image_{ix}")
-            imagehandler_concat.export_image(
-                output_path=f"{self.models_path}/inference", scale=255
+            self.drive_service.export_image(
+                folder_id=self.drive_service.inference_folder_id, data=X_fakeB, idx=ix
             )
 
 
