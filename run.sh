@@ -1,6 +1,10 @@
 #!/bin/bash
 
-. /app/env/bin/activate
+sudo apt install python3.10-venv
+python3.10 -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
 
 get_value() {
     local field=$1
@@ -14,6 +18,8 @@ SCRIPT_FOLDER=$(get_value "SCRIPT_FOLDER:")
 single_scripts=("preprocess" "train" "inference" "overlap_results" "split_video" "remove_background")
 folder_scripts=("super_resolution" "create_video")
 all_scripts=("all")
+
+clear
 
 if [[ " ${single_scripts[@]} " =~ " ${1} " ]]; then
     python "$SRC_PATH/$1.py"

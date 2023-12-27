@@ -1,7 +1,4 @@
-import glob
-import os
-import re
-import shutil
+from io import BytesIO
 
 import cv2
 import yaml
@@ -9,13 +6,14 @@ from numpy import asarray, savez_compressed
 from tensorflow.keras.preprocessing.image import img_to_array
 from tqdm import tqdm
 
+from googledrive import GoogleDrive
 from handlers import ImageClass
 
 
 class Preprocess:
 
     """
-    Description: preprocessing of train, validation and test images.
+    Description: preprocessing of train and test images.
     Output: .npz files with packed preprocessed images.
     """
 
@@ -23,89 +21,74 @@ class Preprocess:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.data = self.config["data"]
-        self.IMAGE_DIM = self.config["image_config"]["DIM"]
+        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
+        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
 
-        self.image_path = f"./data/{self.data}/image/input"
+        self.client_googledrive = GoogleDrive()
 
-        self.reset_folders()
+        # The main_id is the ID of the name of the dataset in Google Drive,
+        # i.e. the ID of "data/bairrodorego".
+        self.main_id = self.config["google_drive"]["main_id"]
 
-        self.preprocess_data("train")
-        self.preprocess_data("test")
-
-    def reset_folders(self):
-
-        for f in ["concat_images", "model_data"]:
-
-            path = f"{self.image_path}/{f}"
-
-            if os.path.exists(path):
-
-                shutil.rmtree(path)
-
-            os.mkdir(path)
-
-    def extract_number(self, file_path):
-
-        match = re.search(r"(\d+)\.png$", file_path)
-
-        if match:
-
-            return int(match.group(1))
-
-        return 0
-
-    def preprocess_data(self, mode):
-
-        for file in tqdm(glob.glob(f"{self.image_path}/frames/{mode}/*")):
-
-            input_img = ImageClass(config=self.config, input_path=file)
-            input_img.read_image()
-            input_img.resize((self.IMAGE_DIM, self.IMAGE_DIM))
-            input_img.get_image_name()
-            input_img.input_filter()
-
-            target_img = ImageClass(config=self.config, input_path=file)
-            target_img.read_image()
-            target_img.resize((self.IMAGE_DIM, self.IMAGE_DIM))
-            target_img.get_image_name()
-            target_img.target_filter()
-
-            imagehandler_concat = ImageClass(
-                config=self.config,
-                cv2image=cv2.hconcat([input_img.image, target_img.image]),
-            )
-            imagehandler_concat.read_image()
-            imagehandler_concat.get_image_name(
-                image_name=file.split("/")[-1].split(".")[0]
-            )
-            imagehandler_concat.export_image(
-                output_path=f"{self.image_path}/concat_images/{mode}",
-                scale=1,
-            )
-
-        sorted_file_paths = sorted(
-            list(glob.glob(f"{self.image_path}/concat_images/{mode}/*")),
-            key=self.extract_number,
+        self.input_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.main_id, folder_name="input"
         )
+
+        self.train_folder_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.input_id, folder_name="train"
+        )
+
+        self.test_folder_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.input_id, folder_name="test"
+        )
+
+        self.model_data_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.main_id, folder_name="model_data"
+        )
+
+        self.model_data_run_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.model_data_id,
+            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
+        )
+
+        self.preprocess_data(mode="train", folder_id=self.train_folder_id)
+        self.preprocess_data(mode="test", folder_id=self.test_folder_id)
+
+    def preprocess_data(self, mode, folder_id):
 
         src_list, tar_list = [], []
 
-        for file in sorted_file_paths:
+        ids = self.client_googledrive.get_items_elements(folder_id=folder_id)
 
-            imagehandler_frame = ImageClass(config=self.config, input_path=file)
-            imagehandler_frame.read_image()
-            pixels = img_to_array(imagehandler_frame.image)
-            width = pixels.shape[1]
-            src_list.append(pixels[:, : int(width / 2), :])
-            tar_list.append(pixels[:, int(width / 2) :, :])
+        for index, file in enumerate(tqdm(ids)):
+
+            input_img = ImageClass(
+                image_element=file, client_googledrive=self.client_googledrive
+            )
+            input_img.input_filter()
+
+            target_img = ImageClass(
+                image_element=file, client_googledrive=self.client_googledrive
+            )
+            target_img.target_filter()
+
+            src_list.append(img_to_array(input_img.image))
+            tar_list.append(img_to_array(input_img.image))
+
+            if mode == "train" and index == 0:
+
+                concat_img = cv2.hconcat([input_img.image, target_img.image])
+
+                cv2.imshow("Image", concat_img)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
 
         [src_images_train, tar_images_train] = [asarray(src_list), asarray(tar_list)]
 
-        savez_compressed(
-            f"{self.image_path}/model_data/{mode}.npz",
-            src_images_train,
-            tar_images_train,
+        npz_data = BytesIO()
+        savez_compressed(npz_data, src_images_train, tar_images_train)
+        self.client_googledrive.send_bytes_file(
+            folder_id=self.model_data_run_id, bytes_io=npz_data, file_name=f"{mode}.npz"
         )
 
 

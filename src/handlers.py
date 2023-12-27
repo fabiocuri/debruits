@@ -1,8 +1,6 @@
-import os
-from pathlib import Path
-
 import cv2
 import numpy as np
+import yaml
 from PIL import Image, ImageOps
 from scipy.ndimage import laplace
 from skimage.color import label2rgb
@@ -11,43 +9,42 @@ from skimage.segmentation import slic
 
 class ImageClass:
     """
-    A class that reads, preprocesses and converts images.
+    A class that reads and preprocesses images.
     """
 
-    def __init__(self, config, input_path="./", cv2image=None):
+    def __init__(self, image_element, client_googledrive):
 
-        super(ImageClass, self).__init__()
-        self.config = config
-        self.input_path = input_path
-        self.cv2image = cv2image
+        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
+        self.image_element = image_element
+        self.client_googledrive = client_googledrive
+
+        self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.BLUR = self.config["image_config"]["BLUR"]
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
 
-    def read_image(self, flag=cv2.IMREAD_COLOR):
+        self.get_image_elements()
+        self.read_image()
+        self.resize()
 
-        if self.cv2image is not None:
+    def get_image_elements(self):
 
-            self.image = self.cv2image
+        self.image_id = self.image_element["id"]
+        self.image_name = self.image_element["name"]
 
-        else:
+    def read_image(self):
 
-            self.image = cv2.imread(self.input_path, flag)
+        image_bytes = self.client_googledrive.get_item(self.image_id)
+        self.image = cv2.imdecode(
+            np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR
+        )
 
-    def resize(self, dim):
+    def resize(self):
 
-        self.image = cv2.resize(self.image, dim, interpolation=cv2.INTER_AREA)
-
-    def get_image_name(self, image_name=None):
-
-        if image_name is not None:
-
-            self.image_name = image_name
-
-        else:
-
-            self.image_name = os.path.basename(self.input_path)
+        self.image = cv2.resize(
+            self.image, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_AREA
+        )
 
     def apply_filter(self, FILTER):
 
@@ -97,14 +94,3 @@ class ImageClass:
     def target_filter(self):
 
         self.apply_filter(self.TARGET_FILTER)
-
-    def export_image(self, output_path, scale):
-
-        Path(output_path).mkdir(parents=True, exist_ok=True)
-
-        cv2.imwrite(f"{output_path}/{self.image_name}.png", scale * self.image)
-
-    def imshow(self):
-
-        cv2.imshow("image", self.image)
-        cv2.waitKey(0)

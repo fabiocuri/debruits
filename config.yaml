@@ -5,6 +5,9 @@ system_config:
   SCRIPT_FOLDER: plot
   VIDEO_PATH: /home/fabio/Videos/test.mp4
   REMOVE_BACKGROUND: /home/fabio/Videos/frames
+google_drive:
+  service_account_json: debruits-2efd0b97327f.json
+  main_id: 1MjIa29dGZi4DIDdTKQ-zIiR3REkE_Ivj
 data: "bairrodorego"
 image_config:
   DIM: 256
@@ -14,9 +17,8 @@ image_config:
 video_config:
   FPS: 5
 model_config:
-  MODE: "start"
   INPUT_FILTER: "original"
-  TARGET_FILTER: "edges"
+  TARGET_FILTER: "solarize"
   N_EPOCHS: 1
   LEARNING_RATE: 0.0002
   BATCH_SIZE: 1

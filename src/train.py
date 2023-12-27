@@ -1,9 +1,8 @@
-import os
-from pathlib import Path
+from io import BytesIO
 
+import numpy as np
 import yaml
-from matplotlib import pyplot
-from numpy import load, ones, zeros
+from numpy import ones, savez_compressed, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
 from tensorflow.keras.initializers import RandomNormal
@@ -16,21 +15,10 @@ from tensorflow.keras.layers import (
     Dropout,
     LeakyReLU,
 )
-from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
-
-def load_compressed(data, file):
-
-    data = load(f"./data/{data}/image/input/model_data/{file}")
-
-    X1, X2 = data["arr_0"], data["arr_1"]
-
-    X1 = (X1 - 127.5) / 127.5
-    X2 = (X2 - 127.5) / 127.5
-
-    return [X1, X2]
+from googledrive import GoogleDrive
 
 
 class Train:
@@ -44,8 +32,8 @@ class Train:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.data = self.config["data"]
-        self.MODE = self.config["model_config"]["MODE"]
+        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
+        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
@@ -53,55 +41,72 @@ class Train:
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
 
-        self.models_path = (
-            f"./data/{self.data}/image/output/{self.INPUT_FILTER}_{self.TARGET_FILTER}"
+        self.client_googledrive = GoogleDrive()
+
+        # The main_id is the ID of the name of the dataset in Google Drive,
+        # i.e. the ID of "data/bairrodorego".
+        self.main_id = self.config["google_drive"]["main_id"]
+
+        self.trained_models_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.main_id, folder_name="trained_models"
         )
 
-        self.train_dataset = load_compressed(self.data, "train.npz")
-        self.test_dataset = load_compressed(self.data, "test.npz")
+        self.trained_models_run_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.trained_models_id,
+            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
+        )
 
-        if self.MODE == "start":
+        self.model_data_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.main_id, folder_name="model_data"
+        )
 
-            self.define_discriminator()
-            self.define_generator()
-            self.define_gan()
+        self.model_data_run_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.model_data_id,
+            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
+        )
 
-            self.stop_step = 0
+        self.output_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.main_id, folder_name="output"
+        )
 
-            Path(f"{self.models_path}/trained_models/").mkdir(
-                parents=True, exist_ok=True
+        self.output_run_id = self.client_googledrive.create_folder(
+            parent_folder_id=self.output_id,
+            folder_name=f"{self.INPUT_FILTER}_{self.TARGET_FILTER}",
+        )
+
+        self.train_dataset = self.load_npz(dataset="train")
+        self.test_dataset = self.load_npz(dataset="test")
+
+        testA, _ = self.test_dataset
+
+        self.images_ids = {}
+
+        for ix in range(testA.shape[0]):
+
+            self.images_ids[ix] = self.client_googledrive.create_folder(
+                parent_folder_id=self.output_run_id, folder_name=f"image_{ix}"
             )
 
-            Path(f"{self.models_path}/model_evolution/").mkdir(
-                parents=True, exist_ok=True
-            )
-
-        if self.MODE == "continue":
-
-            self.discriminator_model = load_model(
-                f"{self.models_path}/trained_models/discriminator_model.h5"
-            )
-            self.generator_model = load_model(
-                f"{self.models_path}/trained_models/generator_model.h5"
-            )
-            self.gan_model = load_model(
-                f"{self.models_path}/trained_models/gan_model.h5"
-            )
-
-            self.stop_step = int(
-                sorted(
-                    [
-                        int(x.split(".png")[0].split("step_")[1])
-                        for x in [
-                            x
-                            for x in os.listdir(f"{self.models_path}/plot_0/")
-                            if x.endswith(".png")
-                        ]
-                    ]
-                )[-1]
-            )
-
+        self.define_discriminator()
+        self.define_generator()
+        self.define_gan()
         self.train_gan()
+
+    def load_npz(self, dataset):
+
+        item_id = self.client_googledrive.get_item_id_by_name(
+            folder_id=self.model_data_run_id, file_name=f"{dataset}.npz"
+        )
+
+        data = self.client_googledrive.get_item(item_id=item_id)
+        data = np.load(BytesIO(data))
+
+        X1, X2 = data["arr_0"], data["arr_1"]
+
+        X1 = (X1 - 127.5) / 127.5
+        X2 = (X2 - 127.5) / 127.5
+
+        return [X1, X2]
 
     def define_discriminator(self):
 
@@ -289,26 +294,33 @@ class Train:
                     X_fakeB = (X_fakeB + 1) / 2.0
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
-                    pyplot.axis("off")
-                    pyplot.imshow(X_fakeB)
-
-                    Path(f"{self.models_path}/plot_{ix}").mkdir(
-                        parents=True, exist_ok=True
+                    self.client_googledrive.export_image(
+                        folder_id=self.images_ids[ix], data=X_fakeB, idx=i
                     )
 
-                    i_step = i + self.stop_step
-
-                    filename1 = f"{self.models_path}/plot_{ix}/step_{i_step}.png"
-                    pyplot.savefig(filename1)
-                    pyplot.close()
-
-        self.discriminator_model.save(
-            f"{self.models_path}/trained_models/discriminator_model.h5"
+        npz_data = BytesIO()
+        savez_compressed(npz_data, self.discriminator_model)
+        self.client_googledrive.send_bytes_file(
+            folder_id=self.trained_models_run_id,
+            bytes_io=npz_data,
+            file_name=f"discriminator_model.h5",
         )
-        self.generator_model.save(
-            f"{self.models_path}/trained_models/generator_model.h5"
+
+        npz_data = BytesIO()
+        savez_compressed(npz_data, self.generator_model)
+        self.client_googledrive.send_bytes_file(
+            folder_id=self.trained_models_run_id,
+            bytes_io=npz_data,
+            file_name=f"generator_model.h5",
         )
-        self.gan_model.save(f"{self.models_path}/trained_models/gan_model.h5")
+
+        npz_data = BytesIO()
+        savez_compressed(npz_data, self.gan_model)
+        self.client_googledrive.send_bytes_file(
+            folder_id=self.trained_models_run_id,
+            bytes_io=npz_data,
+            file_name=f"gan_model.h5",
+        )
 
 
 if __name__ == "__main__":
