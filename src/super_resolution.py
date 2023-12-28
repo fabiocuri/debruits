@@ -22,6 +22,7 @@ class SuperResolution:
 
         self.ENHANCED_WIDTH = self.config["image_config"]["ENHANCED_WIDTH"]
         self.ENHANCED_HEIGHT = self.config["image_config"]["ENHANCED_HEIGHT"]
+        self.ENHANCEMENT_FACTOR = self.config["image_config"]["ENHANCEMENT_FACTOR"]
 
         self.improve()
 
@@ -47,8 +48,7 @@ class SuperResolution:
                     )
 
                     enhancer = ImageEnhance.Sharpness(resized_element)
-                    quality_factor = 20.0
-                    improved_element = enhancer.enhance(quality_factor)
+                    improved_element = enhancer.enhance(self.ENHANCEMENT_FACTOR)
 
                     self.drive_service.export_image(
                         folder_id=self.super_resolution_folder_elements_id,

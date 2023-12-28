@@ -12,6 +12,7 @@ image_config:
   BLUR: 20
   ENHANCED_WIDTH: 1920
   ENHANCED_HEIGHT: 1080
+  ENHANCEMENT_FACTOR: 20
 video_config:
   FPS: 5
 model_config:
