@@ -1,9 +1,10 @@
-import os
-import sys
+from io import BytesIO
 
 import yaml
 from PIL import Image, ImageEnhance
 from tqdm import tqdm
+
+from googledrive import GoogleDrive
 
 
 class SuperResolution:
@@ -17,46 +18,43 @@ class SuperResolution:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.SCRIPT_FOLDER = list(sys.argv)[-1]
+        self.drive_service = GoogleDrive()
 
-        self.data = self.config["data"]
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
         self.ENHANCED_WIDTH = self.config["image_config"]["ENHANCED_WIDTH"]
         self.ENHANCED_HEIGHT = self.config["image_config"]["ENHANCED_HEIGHT"]
-
-        self.models_path = (
-            f"./data/{self.data}/image/output/{self.INPUT_FILTER}_{self.TARGET_FILTER}"
-        )
 
         self.improve()
 
     def improve(self):
 
-        for plot_folder in tqdm(
-            [
-                os.path.join(self.models_path, folder)
-                for folder in os.listdir(self.models_path)
-                if os.path.isdir(os.path.join(self.models_path, folder))
-                and folder.startswith(self.SCRIPT_FOLDER)
-            ]
-        ):
+        for folder in tqdm(self.drive_service.super_resolution_folder_id):
 
-            for pf in os.listdir(plot_folder):
+            self.super_resolution_folder_elements_id = self.drive_service.create_folder(
+                parent_folder_id=folder, folder_name="super_resolution"
+            )
 
-                image_path = os.path.join(plot_folder, pf)
+            elements = self.drive_service.get_items_elements(folder)
 
-                input_image = Image.open(image_path)
+            for element in elements:
 
-                resized_image = input_image.resize(
-                    (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT), Image.ANTIALIAS
-                )
+                if element["name"] != "super_resolution":
 
-                enhancer = ImageEnhance.Sharpness(resized_image)
-                quality_factor = 20.0
-                improved_quality_image = enhancer.enhance(quality_factor)
+                    _element = self.drive_service.get_item(element["id"])
+                    _element = Image.open(BytesIO(_element))
 
-                improved_quality_image.save(image_path)
+                    resized_element = _element.resize(
+                        (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT), Image.ANTIALIAS
+                    )
+
+                    enhancer = ImageEnhance.Sharpness(resized_element)
+                    quality_factor = 20.0
+                    improved_element = enhancer.enhance(quality_factor)
+
+                    self.drive_service.export_image(
+                        folder_id=self.super_resolution_folder_elements_id,
+                        data=improved_element,
+                        file_name=element["name"],
+                    )
 
 
 if __name__ == "__main__":

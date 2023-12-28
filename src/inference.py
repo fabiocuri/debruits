@@ -2,7 +2,6 @@ import yaml
 from tqdm import tqdm
 
 from googledrive import GoogleDrive
-from handlers import ImageClass
 from train import load_npz
 
 
@@ -39,8 +38,12 @@ class Inference:
 
             X_fakeB = (X_fakeB + 1) / 2.0
 
+            X_fakeB = X_fakeB[0]
+
             self.drive_service.export_image(
-                folder_id=self.drive_service.inference_folder_id, data=X_fakeB, idx=ix
+                folder_id=self.drive_service.inference_folder_id,
+                data=X_fakeB,
+                file_name=f"step_{ix}.png",
             )
 
 

@@ -6,6 +6,7 @@ import yaml
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+from keras.models import load_model
 from matplotlib import pyplot
 
 
@@ -21,6 +22,9 @@ class GoogleDrive:
 
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
+        self.SUPER_RESOLUTION_FOLDER = self.config["system_config"][
+            "SUPER_RESOLUTION_FOLDER"
+        ]
 
         self.authenticate()
         self.handle_folders()
@@ -82,6 +86,20 @@ class GoogleDrive:
         self.inference_folder_id = self.create_folder(
             parent_folder_id=self.output_run_id, folder_name="inference"
         )
+
+        if self.SUPER_RESOLUTION_FOLDER == "inference":
+
+            self.super_resolution_folder_id = [self.inference_folder_id]
+
+        elif self.SUPER_RESOLUTION_FOLDER == "evolution":
+
+            self.evolution_folders = self.get_items_elements(self.output_run_id)
+
+            self.super_resolution_folder_id = [
+                element["id"]
+                for element in self.evolution_folders
+                if element["name"].startswith("evolution")
+            ]
 
     def create_folder(self, parent_folder_id, folder_name):
 
@@ -181,22 +199,20 @@ class GoogleDrive:
 
         return image_data.getvalue()
 
-    def export_image(self, folder_id, data, idx):
-
-        filename_local = f"step_{idx}.png"
+    def export_image(self, folder_id, data, file_name):
 
         pyplot.axis("off")
         pyplot.imshow(data)
 
-        pyplot.savefig(filename_local)
+        pyplot.savefig(file_name)
         pyplot.close()
 
         file_metadata = {
-            "name": filename_local,
+            "name": file_name,
             "parents": [folder_id],
         }
 
-        with open(filename_local, "rb") as file:
+        with open(file_name, "rb") as file:
 
             media = MediaIoBaseUpload(file, mimetype="image/png", resumable=True)
 
@@ -210,22 +226,29 @@ class GoogleDrive:
 
                 _, response = request.next_chunk()
 
-        os.remove(filename_local)
+        os.remove(file_name)
 
     def export_h5_file(self, folder_id, model, file_name):
 
-        h5_data = BytesIO()
-        model.save(h5_data, save_format='h5')
+        model.save("temp.h5")
+
+        with open("temp.h5", "rb") as f:
+            h5_data = BytesIO(f.read())
+
+        os.remove("temp.h5")
+
         h5_data.seek(0)
-        
-        self.send_bytes_file(folder_id, h5_data, file_name, file_type='application/octet-stream')
+
+        self.send_bytes_file(folder_id, h5_data, file_name)
 
     def read_h5_file(self, item_id):
 
         file_data = self.get_item(item_id)
         h5_file = h5py.File(BytesIO(file_data), "r")
 
-        return h5_file
+        model = load_model(h5_file)
+
+        return model
 
 
 if __name__ == "__main__":

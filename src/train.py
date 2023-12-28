@@ -71,7 +71,7 @@ class Train:
 
             self.images_ids[ix] = self.drive_service.create_folder(
                 parent_folder_id=self.drive_service.output_run_id,
-                folder_name=f"image_{ix}",
+                folder_name=f"evolution_{ix}",
             )
 
         self.define_discriminator()
@@ -266,7 +266,9 @@ class Train:
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
                     self.drive_service.export_image(
-                        folder_id=self.images_ids[ix], data=X_fakeB, idx=i
+                        folder_id=self.images_ids[ix],
+                        data=X_fakeB,
+                        file_name=f"step_{i}.png",
                     )
 
         self.drive_service.export_h5_file(

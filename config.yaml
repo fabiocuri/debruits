@@ -1,8 +1,6 @@
 system_config:
-  PIP_VERSION: pip3
-  PYTHON_VERSION: python3
   SRC_PATH: ./src
-  SCRIPT_FOLDER: plot
+  SUPER_RESOLUTION_FOLDER: evolution
   VIDEO_PATH: /home/fabio/Videos/test.mp4
   REMOVE_BACKGROUND: /home/fabio/Videos/frames
 google_drive:

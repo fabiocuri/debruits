@@ -32,6 +32,8 @@ class Preprocess:
 
         ids = self.drive_service.get_items_elements(folder_id=folder_id)
 
+        ids = ids[:3]
+
         for index, file in enumerate(tqdm(ids)):
 
             input_img = ImageClass(image_element=file, drive_service=self.drive_service)
