@@ -1,8 +1,13 @@
 import os
+from io import BytesIO
 
 import cv2
+import numpy as np
 import yaml
+from PIL import Image
 from tqdm import tqdm
+
+from googledrive import GoogleDrive
 
 
 class Frames2Videos:
@@ -16,50 +21,69 @@ class Frames2Videos:
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.SCRIPT_FOLDER = self.config["system_config"]["SCRIPT_FOLDER"]
+        self.drive_service = GoogleDrive()
 
-        self.data = self.config["data"]
         self.FPS = self.config["video_config"]["FPS"]
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
         self.ENHANCED_WIDTH = self.config["image_config"]["ENHANCED_WIDTH"]
         self.ENHANCED_HEIGHT = self.config["image_config"]["ENHANCED_HEIGHT"]
-
-        self.models_path = (
-            f"./data/{self.data}/image/output/{self.INPUT_FILTER}_{self.TARGET_FILTER}"
-        )
+        self.SUPER_RESOLUTION_FOLDER = self.config["system_config"][
+            "SUPER_RESOLUTION_FOLDER"
+        ]
 
         self.create_video()
-
-    def sort_key(self, item):
-        return int(item.split(".png")[0].split("_")[1])
 
     def create_video(self):
 
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
+        temp_file_name = "video.mp4"
+
         video_writer = cv2.VideoWriter(
-            f"{self.models_path}/{self.SCRIPT_FOLDER}.mp4",
+            temp_file_name,
             fourcc,
             self.FPS,
             (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
         )
 
-        for plot_folder in tqdm(
-            [
-                os.path.join(self.models_path, folder)
-                for folder in os.listdir(self.models_path)
-                if os.path.isdir(os.path.join(self.models_path, folder))
-                and folder.startswith(self.SCRIPT_FOLDER)
-            ]
-        ):
+        for folder in tqdm(self.drive_service.super_resolution_folder_id):
 
-            for pf in sorted(list(os.listdir(plot_folder)), key=self.sort_key):
+            self.super_resolution_folder_elements_id = self.drive_service.create_folder(
+                parent_folder_id=folder, folder_name="super_resolution"
+            )
 
-                frame = cv2.imread(os.path.join(plot_folder, pf))
-                video_writer.write(frame)
+            elements = self.drive_service.get_items_elements(
+                self.super_resolution_folder_elements_id
+            )
+            elements = sorted(
+                elements, key=lambda x: int(x["name"].split("_")[1].split(".")[0])
+            )
+
+            for element in elements:
+
+                _element = self.drive_service.get_item(element["id"])
+                _element = Image.open(BytesIO(_element))
+                _element = _element.resize(
+                    (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT), Image.ANTIALIAS
+                )
+                _element = np.array(_element.convert("RGB"))[:, :, ::-1]
+                print(_element.shape)
+                video_writer.write(_element)
 
         video_writer.release()
+
+        with open(temp_file_name, "rb") as video_file:
+
+            video_data = BytesIO(video_file.read())
+
+        video_data.seek(0)
+
+        self.drive_service.send_bytes_file(
+            self.drive_service.output_run_id,
+            video_data,
+            f"{self.SUPER_RESOLUTION_FOLDER}.mp4",
+        )
+
+        os.remove(temp_file_name)
 
 
 if __name__ == "__main__":

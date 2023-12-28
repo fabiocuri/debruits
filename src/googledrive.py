@@ -99,6 +99,7 @@ class GoogleDrive:
                 element["id"]
                 for element in self.evolution_folders
                 if element["name"].startswith("evolution")
+                and not element["name"].endswith(".mp4")
             ]
 
     def create_folder(self, parent_folder_id, folder_name):

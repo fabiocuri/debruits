@@ -6,16 +6,14 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 
-get_value() {
-    local field=$1
-    local value=$(awk -v field="$field" '$1 == field {print $2}' "./config.yaml")
-    echo "$value"
-}
+SRC_PATH=./src
 
-SRC_PATH=$(get_value "SRC_PATH:")
-
-single_scripts=("preprocess" "train" "inference" "super_resolution" "create_video" "overlap_results" "split_video" "remove_background")
+single_scripts=("preprocess" "train" "inference" "super_resolution" "create_video" "split_video" "remove_background" "overlap_results")
 
 clear
 
-python "$SRC_PATH/$1.py"
+python3.10 "$SRC_PATH/preprocess.py"
+python3.10 "$SRC_PATH/train.py"
+python3.10 "$SRC_PATH/inference.py"
+python3.10 "$SRC_PATH/super_resolution.py"
+python3.10 "$SRC_PATH/create_video.py"
