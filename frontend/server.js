@@ -1,11 +1,11 @@
-const express = require('express')
-const app = express()
-const bodyParser = require('body-parser')
+const express = require('express');
+const path = require('path');
 
-app.use(bodyParser.json())
-// Whenever we open localhost:3000 on the browser, we get as a return the index.html that is hosted in the path below.
-app.use('/', express.static('./dist/'))
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.listen(3100, function () {
-    console.log("app listening on port 3100")
-})
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
