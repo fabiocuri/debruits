@@ -18,17 +18,17 @@ spec:
       - name: mongodb
         image: mongo
         ports:
-        - containerPort: 27017
+        - containerPort: {{ .Values.mongoDbPort }}
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
           valueFrom:
             secretKeyRef:
-              name: mongodb-secrets
+              name: {{ .Values.secretName }}
               key: mongodb-username
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mongodb-secrets
+              name: {{ .Values.secretName }}
               key: mongodb-password
 ---
 apiVersion: v1
@@ -40,6 +40,6 @@ spec:
     app: mongodb
   ports:
     - protocol: TCP
-      port: 27017
-      targetPort: 27017
+      port: {{ .Values.mongoDbPort }}
+      targetPort: {{ .Values.mongoDbPort }}
 

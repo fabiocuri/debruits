@@ -1,0 +1,7 @@
+mongodbUsernameBase64: ZGVicnVpdHM=
+mongodbPasswordBase64: ZGVicnVpdHM=
+mongodbDatabaseUrl: mongodb
+secretName: debruits-secrets
+configMapName: debruits-configmap
+mongoExpressPort: 8081
+mongoDbPort: 27017
