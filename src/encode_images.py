@@ -1,36 +1,58 @@
 import base64
 import os
 
+import yaml
 from pymongo import MongoClient
 from tqdm import tqdm
 
-uri = "mongodb://debruits:debruits@localhost:27017/?authSource=admin"
 
-client = MongoClient(uri)
-db = client.debruits
-collection = db.train
+def Encode():
 
-images_dir = "data/train"
+    with open("./debruits-kubernetes/values.yaml", "r") as file:
 
-for filename in tqdm(os.listdir(images_dir)):
-    if (
-        filename.endswith(".jpg")
-        or filename.endswith(".jpeg")
-        or filename.endswith(".png")
-    ):
+        yaml_data = yaml.safe_load(file)
 
-        image_path = os.path.join(images_dir, filename)
+    mongodbUsername = base64.b64decode(str(yaml_data["mongodbUsernameBase64"])).decode(
+        "utf-8"
+    )
+    mongodbPassword = base64.b64decode(str(yaml_data["mongodbPasswordBase64"])).decode(
+        "utf-8"
+    )
+    mongoDbPort = str(yaml_data["mongoDbPort"])
 
-        with open(image_path, "rb") as image_file:
+    client = MongoClient(
+        f"mongodb://{mongodbUsername}:{mongodbPassword}@localhost:{mongoDbPort}/?authSource=admin"
+    )
 
-            image_data = image_file.read()
+    db = client[yaml_data["mongoDbDatabase"]]
 
-        base64_image = base64.b64encode(image_data)
+    for data_type in ["train", "test"]:
 
-        base64_image_str = base64_image.decode("utf-8")
+        collection = db[yaml_data[f"mongoDb{data_type}Collection"]]
 
-        image_doc = {"filename": filename, "base64_image": base64_image_str}
+        images_dir = f"./data/{data_type}"
 
-        collection.insert_one(image_doc)
+        for filename in tqdm(os.listdir(images_dir)):
 
-print("Images encoded and saved to MongoDB successfully.")
+            if filename.endswith(".JPG") or filename.endswith(".jpg"):
+
+                image_path = os.path.join(images_dir, filename)
+
+                with open(image_path, "rb") as image_file:
+
+                    image_data = image_file.read()
+
+                base64_image = base64.b64encode(image_data)
+
+                base64_image_str = base64_image.decode("utf-8")
+
+                image_doc = {"filename": filename, "base64_image": base64_image_str}
+
+                collection.insert_one(image_doc)
+
+        print("Images encoded and saved to MongoDB successfully.")
+
+
+if __name__ == "__main__":
+
+    Encode()

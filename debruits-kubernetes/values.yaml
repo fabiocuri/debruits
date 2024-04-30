@@ -5,3 +5,6 @@ secretName: debruits-secrets
 configMapName: debruits-configmap
 mongoExpressPort: 8081
 mongoDbPort: 27017
+mongoDbDatabase: debruits
+mongoDbtrainCollection: train
+mongoDbtestCollection: test
