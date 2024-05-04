@@ -1,7 +1,6 @@
-from io import BytesIO
-
-import numpy as np
+import logging
 import yaml
+from gridfs import GridFS
 from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
@@ -18,31 +17,21 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
-from googledrive import GoogleDrive
+from mongodb_lib import (
+    connect_to_mongodb,
+    delete_collection,
+    load_yaml,
+    preprocess_chunks,
+)
 
-
-def load_npz(drive_service, dataset):
-
-    item_id = drive_service.get_item_id_by_name(
-        folder_id=drive_service.model_data_run_id, file_name=f"{dataset}.npz"
-    )
-
-    data = drive_service.get_item(item_id=item_id)
-    data = np.load(BytesIO(data))
-
-    X1, X2 = data["arr_0"], data["arr_1"]
-
-    X1 = (X1 - 127.5) / 127.5
-    X2 = (X2 - 127.5) / 127.5
-
-    return [X1, X2]
-
+logging.basicConfig(level=logging.INFO)
+from gridfs import GridFS
 
 class Train:
 
     """
     Description: trains a GAN.
-    Output: .h5 models and infered test images.
+    Output: models and infered test images.
     """
 
     def __init__(self):
@@ -53,26 +42,30 @@ class Train:
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
 
-        self.drive_service = GoogleDrive()
+        self.model_name = f"inputfilter_{self.INPUT_FILTER}_targetfilter_{self.TARGET_FILTER}_lr_{self.LEARNING_RATE}"
 
-        self.train_dataset = load_npz(drive_service=self.drive_service, dataset="train")
-        self.test_dataset = load_npz(drive_service=self.drive_service, dataset="test")
+        self.yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
+        self.db = connect_to_mongodb(self.yaml_data)
 
-        testA, _ = self.test_dataset
+        self.fs = GridFS(self.db)
 
-        self.images_ids = {}
+        self.train_dataset = preprocess_chunks(fs = self.fs, id_name="train.npz", db=self.db)
+        self.test_dataset = preprocess_chunks(fs = self.fs, id_name="test.npz", db=self.db)
 
-        for ix in range(testA.shape[0]):
+        self.collection_test_evolution = (
+            self.yaml_data[f"mongoDbtestCollectionEvolution"] + "_" + self.model_name
+        )
+        delete_collection(self.db, self.collection_test_evolution)
+        self.collection_test_evolution = self.db[self.collection_test_evolution]
 
-            self.images_ids[ix] = self.drive_service.create_folder(
-                parent_folder_id=self.drive_service.output_run_id,
-                folder_name=f"evolution_{ix}",
-            )
+        self.collection_model = (
+            self.yaml_data[f"mongoDbmodelCollection"] + "_" + self.model_name
+        )
+        delete_collection(self.db, self.collection_model)
+        self.collection_model = self.db[self.collection_model]
 
         self.define_discriminator()
         self.define_generator()
@@ -228,6 +221,17 @@ class Train:
 
         return X, y
 
+    def save_model(self, this_model, this_model_name, this_collection):
+
+        model_bytes = this_model.to_json().encode()
+        filename = this_model_name + "_" + self.model_name + ".h5"
+        self.fs.put(model_bytes, filename=filename)
+        image_doc = {
+            "filename": filename,
+            "model_id": self.fs.get_last_version(filename)._id,
+        }
+        this_collection.insert_one(image_doc)
+
     def train_gan(self):
 
         n_patch = self.discriminator_model.output_shape[1]
@@ -254,7 +258,7 @@ class Train:
 
             _, _, _ = self.gan_model.train_on_batch(X_realA, [y_real, X_realB])
 
-            if (i + 1) % 10 == 0:
+            if (i + 1) % 5 == 0:
 
                 testA, _ = self.test_dataset
 
@@ -265,29 +269,20 @@ class Train:
                     X_fakeB = (X_fakeB + 1) / 2.0
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
-                    self.drive_service.export_image(
-                        folder_id=self.images_ids[ix],
-                        data=X_fakeB,
-                        file_name=f"step_{i}.png",
-                    )
+                    image_bytes = X_fakeB.tobytes()
+                    filename = f"image_{ix}_step_{i}"
+                    self.fs.put(image_bytes, filename=filename)
+                    image_doc = {
+                        "filename": filename,
+                        "base64_image": self.fs.get_last_version(filename)._id,
+                    }
+                    self.collection_test_evolution.insert_one(image_doc)
 
-        self.drive_service.export_h5_file(
-            folder_id=self.drive_service.trained_models_run_id,
-            model=self.discriminator_model,
-            file_name="discriminator_model.h5",
+        self.save_model(
+            self.discriminator_model, "discriminator_model", self.collection_model
         )
-
-        self.drive_service.export_h5_file(
-            folder_id=self.drive_service.trained_models_run_id,
-            model=self.generator_model,
-            file_name="generator_model.h5",
-        )
-
-        self.drive_service.export_h5_file(
-            folder_id=self.drive_service.trained_models_run_id,
-            model=self.gan_model,
-            file_name="gan_model.h5",
-        )
+        self.save_model(self.generator_model, "generator_model", self.collection_model)
+        self.save_model(self.gan_model, "gan_model", self.collection_model)
 
 
 if __name__ == "__main__":

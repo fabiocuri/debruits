@@ -4,10 +4,9 @@ from io import BytesIO
 import cv2
 import numpy as np
 import yaml
+from googledrive import GoogleDrive
 from PIL import Image
 from tqdm import tqdm
-
-from googledrive import GoogleDrive
 
 
 class Frames2Videos:

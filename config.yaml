@@ -16,8 +16,8 @@ video_config:
   FPS: 5
 model_config:
   INPUT_FILTER: "original"
-  TARGET_FILTER: "slic-500"
+  TARGET_FILTER: "edges"
   N_EPOCHS: 1
-  LEARNING_RATE: 0.0002
+  LEARNING_RATE: 0.001
   BATCH_SIZE: 1
 overlap-images: ["original_solarize", "original_slic-1000"]

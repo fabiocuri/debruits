@@ -12,33 +12,18 @@ class ImageClass:
     A class that reads and preprocesses images.
     """
 
-    def __init__(self, image_element, drive_service):
+    def __init__(self, image):
 
         self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-        self.image_element = image_element
-        self.drive_service = drive_service
+        self.image = image
 
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.BLUR = self.config["image_config"]["BLUR"]
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
 
-        self.get_image_elements()
-        self.read_image()
         self.resize()
-
-    def get_image_elements(self):
-
-        self.image_id = self.image_element["id"]
-        self.image_name = self.image_element["name"]
-
-    def read_image(self):
-
-        image_bytes = self.drive_service.get_item(self.image_id)
-        self.image = cv2.imdecode(
-            np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR
-        )
 
     def resize(self):
 

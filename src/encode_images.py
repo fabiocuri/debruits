@@ -1,78 +1,46 @@
-import base64
 import logging
 import os
 
-import yaml
-from pymongo import MongoClient
 from tqdm import tqdm
+
+from mongodb_lib import load_yaml, connect_to_mongodb, delete_collection, save_image_to_mongodb
 
 logging.basicConfig(level=logging.INFO)
 
-
-def load_yaml(file_path):
-    with open(file_path, "r") as file:
-        return yaml.safe_load(file)
-
-
-def connect_to_mongodb(yaml_data):
-    try:
-        mongodb_username = base64.b64decode(yaml_data["mongodbUsernameBase64"]).decode(
-            "utf-8"
-        )
-        mongodb_password = base64.b64decode(yaml_data["mongodbPasswordBase64"]).decode(
-            "utf-8"
-        )
-        mongodb_port = str(yaml_data["mongoDbPort"])
-        client = MongoClient(
-            f"mongodb://{mongodb_username}:{mongodb_password}@localhost:{mongodb_port}/?authSource=admin"
-        )
-        db = client[yaml_data["mongoDbDatabase"]]
-        return db
-    except Exception as e:
-        logging.error(f"Failed to connect to MongoDB: {e}")
-        raise
-
-
-def delete_all_documents_in_collections(db):
-    for collection_name in db.list_collection_names():
-        collection = db[collection_name]
-        collection.delete_many({})
-
-
 def encode_images(db, yaml_data):
+
     for data_type in ["train", "test"]:
-        collection = db[yaml_data[f"mongoDb{data_type}Collection"]]
+
+        collection_name = yaml_data[f"mongoDb{data_type}Collection"]
+        delete_collection(db, collection_name)
+
+        collection = db[collection_name]
         images_dir = os.path.join(".", "data", data_type)
-        for filename in tqdm(os.listdir(images_dir)):
+        files = list(os.listdir(images_dir))[:5]
+
+        for filename in tqdm(files):
+
             if filename.lower().endswith((".jpg", ".jpeg")):
+
                 image_path = os.path.join(images_dir, filename)
-                try:
-                    with open(image_path, "rb") as image_file:
-                        image_data = image_file.read()
-                        base64_image = base64.b64encode(image_data)
-                        base64_image_str = base64_image.decode("utf-8")
-                        image_doc = {
-                            "filename": filename,
-                            "base64_image": base64_image_str,
-                        }
-                        collection.insert_one(image_doc)
-                except Exception as e:
-                    logging.error(f"Failed to encode and save image {filename}: {e}")
-                    continue
+
+                with open(image_path, "rb") as image_file:
+
+                    image_data = image_file.read()
+                    save_image_to_mongodb(image_data, filename, collection)
+
         logging.info(
             f"Images in {data_type} encoded and saved to MongoDB successfully."
         )
 
 
 def main():
-    try:
-        yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
-        db = connect_to_mongodb(yaml_data)
-        delete_all_documents_in_collections(db)
-        encode_images(db, yaml_data)
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+
+    yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
+    db, _ = connect_to_mongodb(yaml_data)
+    encode_images(db, yaml_data)
 
 
 if __name__ == "__main__":
+
     main()

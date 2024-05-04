@@ -1,69 +1,75 @@
-from io import BytesIO
+import base64
+import io
+import logging
 
-import cv2
+import numpy as np
 import yaml
-from numpy import asarray, savez_compressed
-from tensorflow.keras.preprocessing.image import img_to_array
+from image import ImageClass
+from PIL import Image
 from tqdm import tqdm
 
-from googledrive import GoogleDrive
-from handlers import ImageClass
+from mongodb_lib import (
+    load_yaml,
+    connect_to_mongodb,
+    load_yaml,
+)
+
+logging.basicConfig(level=logging.INFO)
 
 
-class Preprocess:
+def preprocess_data(db, fs, yaml_data):
 
-    """
-    Description: preprocessing of train and test images.
-    Output: .npz files with packed preprocessed images.
-    """
+    config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-    def __init__(self):
+    INPUT_FILTER = config["model_config"]["INPUT_FILTER"]
+    TARGET_FILTER = config["model_config"]["TARGET_FILTER"]
+    LEARNING_RATE = config["model_config"]["LEARNING_RATE"]
 
-        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+    model_name = (
+        f"{INPUT_FILTER}_{TARGET_FILTER}_{LEARNING_RATE}"
+    )
 
-        self.drive_service = GoogleDrive()
-
-        self.preprocess_data(mode="train", folder_id=self.drive_service.train_folder_id)
-        self.preprocess_data(mode="test", folder_id=self.drive_service.test_folder_id)
-
-    def preprocess_data(self, mode, folder_id):
+    for data_type in ["train", "test"]:
 
         src_list, tar_list = [], []
 
-        ids = self.drive_service.get_items_elements(folder_id=folder_id)
+        collection = db[yaml_data[f"mongoDb{data_type}Collection"]]
 
-        for index, file in enumerate(tqdm(ids)):
+        cursor = list(collection.find({}))
 
-            input_img = ImageClass(image_element=file, drive_service=self.drive_service)
+        for document in tqdm(cursor):
+
+            base64_image_str = document.get("base64_image", "")
+            image_bytes = base64.b64decode(base64_image_str)
+            image_stream = Image.open(io.BytesIO(image_bytes))
+            image = np.array(image_stream)
+
+            input_img = ImageClass(image=image)
             input_img.input_filter()
 
-            target_img = ImageClass(
-                image_element=file, drive_service=self.drive_service
-            )
+            target_img = ImageClass(image=image)
             target_img.target_filter()
 
-            src_list.append(img_to_array(input_img.image))
-            tar_list.append(img_to_array(input_img.image))
+            src_list.append(input_img.image)
+            tar_list.append(target_img.image)
 
-            if mode == "train" and index == 0:
+        src_images_train = np.stack(src_list)
+        tar_images_train = np.stack(tar_list)
 
-                concat_img = cv2.hconcat([input_img.image, target_img.image])
+        npz_data = io.BytesIO()
+        np.savez_compressed(npz_data, src_images_train, tar_images_train)
 
-                cv2.imshow("Image", concat_img)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+        npz_data.seek(0)
 
-        [src_images_train, tar_images_train] = [asarray(src_list), asarray(tar_list)]
+        filename = f"{data_type}_{model_name}"
+        fs.put(npz_data, filename=filename)
 
-        npz_data = BytesIO()
-        savez_compressed(npz_data, src_images_train, tar_images_train)
-        self.drive_service.send_bytes_file(
-            folder_id=self.drive_service.model_data_run_id,
-            bytes_io=npz_data,
-            file_name=f"{mode}.npz",
-        )
+def main():
 
+    yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
+    db, fs = connect_to_mongodb(yaml_data)
+    preprocess_data(db, fs, yaml_data)
 
 if __name__ == "__main__":
 
-    Preprocess()
+    main()
