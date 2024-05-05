@@ -13,24 +13,16 @@ chmod 666 /var/run/docker.sock
 apt-get update
 apt-get install -y python3 python3-pip
 
+# Install minikube
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+chmod +x minikube
+mv minikube /usr/local/bin/
+
 # Install kubectl
 curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl; chmod +x ./kubectl; mv ./kubectl /usr/local/bin/kubectl
 
 
 
-minikube start
-
-# Clean namespace
-kubectl delete all --all -n debruits
-kubectl delete secrets --all -n debruits
-kubectl delete configmaps --all -n debruits
-
-# Install infrastructure using Helm templates
-kubectl create namespace debruits
-helm repo add jenkins https://charts.jenkins.io
-helm repo update
-helm install debruits-kubernetes ./debruits-kubernetes -n debruits
-helm install jenkins jenkins/jenkins
 
 # Clear ports and expose MongoDB and Mongo Express
 kill -9 $(lsof -t -i:8080)

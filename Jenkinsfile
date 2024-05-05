@@ -4,16 +4,27 @@ pipeline {
         PYTHON_VERSION = 'python3.10'
     }
     stages {
-        stage('setup') {
+        stage('setup-k8s') {
             steps {
                 script {
                     sh 'minikube start'
-                    sh 'kubectl delete namespace debruits'
                     sh 'kubectl create namespace debruits'
                     sh 'helm install debruits-kubernetes ./debruits-kubernetes -n debruits'
-                    sh 'pip install -r requirements.txt'
+                }
+            }
+        }
+        stage('download-data') {
+            steps {
+                script {
                     sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
                     sh 'unzip data.zip'
+                }
+            }
+        }
+        stage('install-python-requirements') {
+            steps {
+                script {
+                    sh 'pip install -r requirements.txt'
                 }
             }
         }
