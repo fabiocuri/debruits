@@ -1,27 +1,37 @@
-#!/usr/bin/env groovy
 pipeline {
     agent any
+    environment {
+        PYTHON_VERSION = 'python3.10'
+    }
     stages {
-        stage('retrieve-data') {
+        stage('setup') {
             steps {
-                pip install -r requirements.txt
-                gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD
-                python3.10 "./src/encode_images.py"
+                script {
+                    sh 'pip install -r requirements.txt'
+                    sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
+                    sh "${PYTHON_VERSION} ./src/encode_images.py"
+                }
             }
         }
         stage('preprocess-data') {
             steps {
-                python3.10 "./src/preprocess.py"
+                script {
+                    sh "${PYTHON_VERSION} ./src/preprocess.py"
+                }
             }
         }
         stage('train-model') {
             steps {
-                python3.10 "./src/train.py"
+                script {
+                    sh "${PYTHON_VERSION} ./src/train.py"
+                }
             }
         }
         stage('inference-model') {
             steps {
-                python3.10 "./src/inference.py"
+                script {
+                    sh "${PYTHON_VERSION} ./src/inference.py"
+                }
             }
         }
     }
