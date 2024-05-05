@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Install and configure Jenkins
+
+docker run -p 8080:8080 -p 50000:50000 -d -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
+docker exec -u 0 -it 5f4841c68399 bash
+
+# Install Docker
+curl https://get.docker.com/ > dockerinstall && chmod 777 dockerinstall && ./dockerinstall
+chmod 666 /var/run/docker.sock
+
+# Install pip and Python
+apt-get update
+apt-get install -y python3 python3-pip
+
+# Install kubectl
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl; chmod +x ./kubectl; mv ./kubectl /usr/local/bin/kubectl
+
+
+
 minikube start
 
 # Clean namespace

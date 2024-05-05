@@ -7,10 +7,14 @@ pipeline {
         stage('setup') {
             steps {
                 script {
-                    sh 'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py'
-                    sh 'python get-pip.py --user'
                     sh 'pip install -r requirements.txt'
                     sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
+                }
+            }
+        }
+        stage('encode-data') {
+            steps {
+                script {
                     sh "${PYTHON_VERSION} ./src/encode_images.py"
                 }
             }
