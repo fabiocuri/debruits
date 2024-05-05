@@ -7,8 +7,13 @@ pipeline {
         stage('setup') {
             steps {
                 script {
+                    sh 'minikube start'
+                    sh 'kubectl delete namespace debruits'
+                    sh 'kubectl create namespace debruits'
+                    sh 'helm install debruits-kubernetes ./debruits-kubernetes -n debruits'
                     sh 'pip install -r requirements.txt'
                     sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
+                    sh 'unzip data.zip'
                 }
             }
         }
