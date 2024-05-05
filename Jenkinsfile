@@ -7,6 +7,8 @@ pipeline {
         stage('setup') {
             steps {
                 script {
+                    sh 'sudo apt update'
+                    sh 'sudo apt install python3-pip'
                     sh 'pip install -r requirements.txt'
                     sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
                     sh "${PYTHON_VERSION} ./src/encode_images.py"
