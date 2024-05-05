@@ -17,7 +17,7 @@ pipeline {
                 python3.10 "./src/train.py"
             }
         }
-        stage('commit version update') {
+        stage('inference-model') {
             steps {
                 python3.10 "./src/inference.py"
             }
