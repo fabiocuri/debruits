@@ -1,6 +1,4 @@
-import logging
 import yaml
-from gridfs import GridFS
 from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
@@ -17,15 +15,8 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
-from mongodb_lib import (
-    connect_to_mongodb,
-    delete_collection,
-    load_yaml,
-    preprocess_chunks,
-)
+from mongodb_lib import connect_to_mongodb, load_yaml, preprocess_chunks, save_model
 
-logging.basicConfig(level=logging.INFO)
-from gridfs import GridFS
 
 class Train:
 
@@ -36,7 +27,7 @@ class Train:
 
     def __init__(self):
 
-        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+        self.config = load_yaml(yaml_path="config.yaml")
 
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
@@ -45,32 +36,26 @@ class Train:
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
 
-        self.model_name = f"inputfilter_{self.INPUT_FILTER}_targetfilter_{self.TARGET_FILTER}_lr_{self.LEARNING_RATE}"
+        self.model_name = (
+            f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
+        )
 
         self.yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
-        self.db = connect_to_mongodb(self.yaml_data)
+        self.db, self.fs = connect_to_mongodb(self.yaml_data)
 
-        self.fs = GridFS(self.db)
-
-        self.train_dataset = preprocess_chunks(fs = self.fs, id_name="train.npz", db=self.db)
-        self.test_dataset = preprocess_chunks(fs = self.fs, id_name="test.npz", db=self.db)
-
-        self.collection_test_evolution = (
-            self.yaml_data[f"mongoDbtestCollectionEvolution"] + "_" + self.model_name
+        self.train_dataset = preprocess_chunks(
+            fs=self.fs, id_name=f"train_preprocessed_{self.model_name}", db=self.db
         )
-        delete_collection(self.db, self.collection_test_evolution)
-        self.collection_test_evolution = self.db[self.collection_test_evolution]
-
-        self.collection_model = (
-            self.yaml_data[f"mongoDbmodelCollection"] + "_" + self.model_name
+        self.test_dataset = preprocess_chunks(
+            fs=self.fs, id_name=f"test_preprocessed_{self.model_name}", db=self.db
         )
-        delete_collection(self.db, self.collection_model)
-        self.collection_model = self.db[self.collection_model]
 
-        self.define_discriminator()
-        self.define_generator()
-        self.define_gan()
-        self.train_gan()
+        if self.fs.find_one({"filename": f"gan_model_{self.model_name}"}) is None:
+
+            self.define_discriminator()
+            self.define_generator()
+            self.define_gan()
+            self.train_gan()
 
     def define_discriminator(self):
 
@@ -221,17 +206,6 @@ class Train:
 
         return X, y
 
-    def save_model(self, this_model, this_model_name, this_collection):
-
-        model_bytes = this_model.to_json().encode()
-        filename = this_model_name + "_" + self.model_name + ".h5"
-        self.fs.put(model_bytes, filename=filename)
-        image_doc = {
-            "filename": filename,
-            "model_id": self.fs.get_last_version(filename)._id,
-        }
-        this_collection.insert_one(image_doc)
-
     def train_gan(self):
 
         n_patch = self.discriminator_model.output_shape[1]
@@ -270,19 +244,24 @@ class Train:
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
                     image_bytes = X_fakeB.tobytes()
-                    filename = f"image_{ix}_step_{i}"
+                    filename = f"test_image_{ix}_step_{i}_{self.model_name}"
                     self.fs.put(image_bytes, filename=filename)
-                    image_doc = {
-                        "filename": filename,
-                        "base64_image": self.fs.get_last_version(filename)._id,
-                    }
-                    self.collection_test_evolution.insert_one(image_doc)
 
-        self.save_model(
-            self.discriminator_model, "discriminator_model", self.collection_model
+        save_model(
+            fs=self.fs,
+            model_object=self.discriminator_model,
+            model_object_name=f"discriminator_model_{self.model_name}",
         )
-        self.save_model(self.generator_model, "generator_model", self.collection_model)
-        self.save_model(self.gan_model, "gan_model", self.collection_model)
+        save_model(
+            fs=self.fs,
+            model_object=self.generator_model,
+            model_object_name=f"generator_model_{self.model_name}",
+        )
+        save_model(
+            fs=self.fs,
+            model_object=self.gan_model,
+            model_object_name=f"gan_model_{self.model_name}",
+        )
 
 
 if __name__ == "__main__":

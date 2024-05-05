@@ -1,74 +1,69 @@
 import base64
 import io
-import logging
 
 import numpy as np
-import yaml
-from image import ImageClass
 from PIL import Image
 from tqdm import tqdm
 
-from mongodb_lib import (
-    load_yaml,
-    connect_to_mongodb,
-    load_yaml,
-)
-
-logging.basicConfig(level=logging.INFO)
+from image import ImageClass
+from mongodb_lib import connect_to_mongodb, load_yaml
 
 
 def preprocess_data(db, fs, yaml_data):
 
-    config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+    config = load_yaml(yaml_path="config.yaml")
 
     INPUT_FILTER = config["model_config"]["INPUT_FILTER"]
     TARGET_FILTER = config["model_config"]["TARGET_FILTER"]
     LEARNING_RATE = config["model_config"]["LEARNING_RATE"]
 
-    model_name = (
-        f"{INPUT_FILTER}_{TARGET_FILTER}_{LEARNING_RATE}"
-    )
+    model_name = f"{INPUT_FILTER}_{TARGET_FILTER}_{LEARNING_RATE}"
 
     for data_type in ["train", "test"]:
 
-        src_list, tar_list = [], []
+        filename = f"{data_type}_preprocessed_{model_name}"
 
-        collection = db[yaml_data[f"mongoDb{data_type}Collection"]]
+        if fs.find_one({"filename": filename}) is None:
 
-        cursor = list(collection.find({}))
+            src_list, tar_list = [], []
 
-        for document in tqdm(cursor):
+            collection = db[yaml_data[f"mongoDb{data_type}Collection"]]
 
-            base64_image_str = document.get("base64_image", "")
-            image_bytes = base64.b64decode(base64_image_str)
-            image_stream = Image.open(io.BytesIO(image_bytes))
-            image = np.array(image_stream)
+            cursor = list(collection.find({}))
 
-            input_img = ImageClass(image=image)
-            input_img.input_filter()
+            for document in tqdm(cursor):
 
-            target_img = ImageClass(image=image)
-            target_img.target_filter()
+                base64_image_str = document.get("base64_image", "")
+                image_bytes = base64.b64decode(base64_image_str)
+                image_stream = Image.open(io.BytesIO(image_bytes))
+                image = np.array(image_stream)
 
-            src_list.append(input_img.image)
-            tar_list.append(target_img.image)
+                input_img = ImageClass(image=image)
+                input_img.input_filter()
 
-        src_images_train = np.stack(src_list)
-        tar_images_train = np.stack(tar_list)
+                target_img = ImageClass(image=image)
+                target_img.target_filter()
 
-        npz_data = io.BytesIO()
-        np.savez_compressed(npz_data, src_images_train, tar_images_train)
+                src_list.append(input_img.image)
+                tar_list.append(target_img.image)
 
-        npz_data.seek(0)
+            src_images_train = np.stack(src_list)
+            tar_images_train = np.stack(tar_list)
 
-        filename = f"{data_type}_{model_name}"
-        fs.put(npz_data, filename=filename)
+            npz_data = io.BytesIO()
+            np.savez_compressed(npz_data, src_images_train, tar_images_train)
+
+            npz_data.seek(0)
+
+            fs.put(npz_data, filename=filename)
+
 
 def main():
 
-    yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
-    db, fs = connect_to_mongodb(yaml_data)
-    preprocess_data(db, fs, yaml_data)
+    yaml_data = load_yaml(yaml_path="debruits-kubernetes/values.yaml")
+    db, fs = connect_to_mongodb(yaml_data=yaml_data)
+    preprocess_data(db=db, fs=fs, yaml_data=yaml_data)
+
 
 if __name__ == "__main__":
 

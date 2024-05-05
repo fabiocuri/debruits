@@ -8,8 +8,3 @@ mongoDbPort: 27017
 mongoDbDatabase: debruits
 mongoDbtrainCollection: train-raw
 mongoDbtestCollection: test-raw
-mongoDbtestCollectionEvolution: test-evolution
-mongoDbmodelCollection: model
-mongoDbtestCollectionInference: test-inference
-mongoDbtestCollectionInferenceSuperResolution: test-inference-super-resolution
-mongoDbtestCollectionEvolutionSuperResolution: test-evolution-super-resolution

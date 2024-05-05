@@ -1,17 +1,21 @@
 import base64
 import logging
-import yaml
-from pymongo import MongoClient
-import numpy as np
 from io import BytesIO
+
+import numpy as np
+import yaml
 from gridfs import GridFS
+from pymongo import MongoClient
+
 logging.basicConfig(level=logging.INFO)
 
-def load_yaml(file_path):
 
-    with open(file_path, "r") as file:
+def load_yaml(yaml_path):
+
+    with open(yaml_path, "r") as file:
 
         return yaml.safe_load(file)
+
 
 def connect_to_mongodb(yaml_data):
 
@@ -56,6 +60,7 @@ def save_image_to_mongodb(image_data, filename, collection):
     }
     collection.insert_one(image_doc)
 
+
 def load_data_from_chunks(fs, id_name, db):
 
     file = fs.find_one({"filename": id_name})
@@ -64,6 +69,7 @@ def load_data_from_chunks(fs, id_name, db):
     data = np.load(BytesIO(data_chunks))
 
     return data
+
 
 def preprocess_chunks(fs, id_name, db):
 
@@ -75,3 +81,9 @@ def preprocess_chunks(fs, id_name, db):
     X2 = (X2 - 127.5) / 127.5
 
     return [X1, X2]
+
+
+def save_model(fs, model_object, model_object_name):
+
+    model_bytes = model_object.to_json().encode()
+    fs.put(model_bytes, filename=model_object_name)
