@@ -7,7 +7,7 @@ pipeline {
         stage('setup-k8s') {
             steps {
                 script {
-                    sh 'minikube start'
+                    sh 'kubectl config use-context minikube'
                     sh 'kubectl create namespace debruits'
                     sh 'helm install debruits-kubernetes ./debruits-kubernetes -n debruits'
                 }
