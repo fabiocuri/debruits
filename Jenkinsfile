@@ -1,7 +1,8 @@
 pipeline {
-    agent any
-    environment {
-        PYTHON_VERSION = 'python3.10'
+    agent {
+        kubernetes {
+            label 'cluster-label'
+        }
     }
     stages {
         stage('setup-k8s') {

@@ -12,7 +12,6 @@ kubectl port-forward $JENKINS_POD 8080:8080 &
 kubectl port-forward $MONGODB_POD 27017:27017 &
 kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
 #password mongo-express: admin/pass
-#password jenkins: admin/pass
 
 sudo rm -rf venv
 sudo apt install python3.10-venv
@@ -21,7 +20,7 @@ source venv/bin/activate
 
                     sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
                     sh 'unzip data.zip'
-                    
+
 pip install -r requirements.txt
 
 python3.10 "./src/encode_images.py"
