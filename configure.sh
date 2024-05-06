@@ -27,25 +27,42 @@ echo "--------------------------------------------"
 ip_addresses=$(hostname -I)
 export MY_IP_ADDRESS=$(echo "$ip_addresses" | awk '{print $1}')
 kind delete cluster --name kind
-envsubst < cluster.yaml | kind create cluster --retain --config=-
+envsubst < ./kubernetes/cluster.yaml | kind create cluster --retain --config=-
 kubectl cluster-info --context kind-kind
 
 echo "--------------------------------------------"
 echo "Setting up Jenkins..."
 echo "--------------------------------------------"
 kubectl create namespace jenkins
+kubens jenkins
 helm repo add jenkins https://charts.jenkins.io
 helm repo update
-helm install jenkins jenkins/jenkins --namespace jenkins
-kubectl apply -f jenkins-token.yaml --namespace jenkins
+helm install jenkins jenkins/jenkins
+kubectl apply -f ./kubernetes/jenkins-token.yaml
 echo "-----------BEGINNING TOKEN-----------"
-kubectl describe secret $(kubectl describe serviceaccount jenkins --namespace jenkins | grep token | awk '{print $2}') --namespace jenkins
+kubectl describe secret $(kubectl describe serviceaccount jenkins | grep token | awk '{print $2}')
 echo "-----------END TOKEN-----------"
-kubectl create rolebinding jenkins-admin-binding --clusterrole=admin --serviceaccount=jenkins:jenkins --namespace jenkins
+kubectl create rolebinding jenkins-admin-binding --clusterrole=admin --serviceaccount=jenkins:jenkins
+
+echo "--------------------------------------------"
+echo "Setting up MongoDB..."
+echo "--------------------------------------------"
+kubectl apply -f ./kubernetes/debruits-configmap.yaml
+kubectl apply -f ./kubernetes/debruits-secret.yaml
+kubectl apply -f ./kubernetes/mongodb.yaml
+
+echo "--------------------------------------------"
+echo "Setting up Mongo Express..."
+echo "--------------------------------------------"
+kubectl apply -f ./kubernetes/mongodb-express.yaml
+
+echo "--------------------------------------------"
+echo "Exposing ports..."
+echo "--------------------------------------------"
 kubectl port-forward jenkins-0 8080:8080 &
-
-
-
+kubectl port-forward jenkins-0 8081:8081 &
+echo "You can access Jenkins through https://localhost:8080"
+echo "You can access Mongo Express through https://localhost:8081"
 
 # #!/bin/bash
 
