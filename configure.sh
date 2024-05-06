@@ -37,7 +37,7 @@ kubectl create namespace jenkins
 kubens jenkins
 helm repo add jenkins https://charts.jenkins.io
 helm repo update
-helm install jenkins jenkins/jenkins
+helm install jenkins jenkins/jenkins -f ./kubernetes/jenkins.yaml
 kubectl apply -f ./kubernetes/jenkins-token.yaml
 echo "-----------BEGINNING TOKEN-----------"
 kubectl describe secret $(kubectl describe serviceaccount jenkins | grep token | awk '{print $2}')
