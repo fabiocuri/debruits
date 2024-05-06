@@ -18,7 +18,7 @@ bash configure.sh
 
 ## Configure Jenkins
 
-1. Go to Jenkins, click on "Build Executor Status", then the main cluster, and set number of executors to 0, and create a label (e.g. "cluster-label").
+1. Go to Jenkins, click on "Build Executor Status", then the main cluster, and set number of executors to 0, and create a label (e.g. "kubernetes").
 2. Install the Kubernetes plugin.
 3. Open "Manage Jenkins", "Clouds", "New cloud" and create a "kubernetes" Cloud of type Kubernetes.
    Add the URL that is the result of "kubectl cluster-info --context kind-kind".
