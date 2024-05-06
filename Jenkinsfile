@@ -4,6 +4,13 @@ pipeline {
         PYTHON_VERSION = 'python3.10'
     }
     stages {
+        stage('install-dependencies') {
+            steps {
+                script {
+                    sh 'pip install gdown'
+                }
+            }
+        }
         stage('download-data') {
             steps {
                 script {
