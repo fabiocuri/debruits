@@ -59,41 +59,21 @@ kubectl apply -f ./kubernetes/mongodb-express.yaml
 echo "--------------------------------------------"
 echo "Exposing ports..."
 echo "--------------------------------------------"
-kubectl port-forward jenkins-0 8080:8080 &
-kubectl port-forward jenkins-0 8081:8081 &
+sleep 90
+export JENKINS_POD=$(kubectl get pods -l app.kubernetes.io/name=jenkins -o jsonpath='{.items[0].metadata.name}')
+export MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -o jsonpath='{.items[0].metadata.name}')
+echo $JENKINS_POD
+echo $MONGO_EXPRESS_POD
+{
+  kill -9 $(lsof -t -i:8080) || true
+  kill -9 $(lsof -t -i:8081) || true
+} &>/dev/null
+kubectl port-forward $JENKINS_POD 8080:8080 &
+kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
 echo "You can access Jenkins through https://localhost:8080"
-echo "You can access Mongo Express through https://localhost:8081"
-
-# #!/bin/bash
-
-# # Clear ports and expose MongoDB and Mongo Express
-# kill -9 $(lsof -t -i:8080)
-# kill -9 $(lsof -t -i:8081)
-# kill -9 $(lsof -t -i:27017)
-
-# JENKINS_POD=$(kubectl get pods -l app.kubernetes.io/name=jenkins -n debruits  -o jsonpath='{.items[0].metadata.name}')
-# MONGODB_POD=$(kubectl get pods -l app=mongodb -n debruits -o jsonpath='{.items[0].metadata.name}')
-# MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -n debruits -o jsonpath='{.items[0].metadata.name}')
-# kubectl port-forward $JENKINS_POD 8080:8080 &
-# kubectl port-forward $MONGODB_POD 27017:27017 &
-# kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
-# #password mongo-express: admin/pass
+echo "You can access Mongo Express through https://localhost:8081" #admin/pass
 
 # sudo rm -rf venv
 # sudo apt install python3.10-venv
 # python3.10 -m venv venv
 # source venv/bin/activate
-
-#                     sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
-#                     sh 'unzip data.zip'
-
-# pip install -r requirements.txt
-
-# python3.10 "./src/encode_images.py"
-# python3.10 "./src/preprocess.py"
-# python3.10 "./src/train.py"
-# python3.10 "./src/inference.py"
-
-
-# python3.10 "./src/super_resolution.py"
-# python3.10 "./src/create_video.py"
