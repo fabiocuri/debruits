@@ -70,7 +70,7 @@ echo $MONGO_EXPRESS_POD
 } &>/dev/null
 kubectl port-forward $JENKINS_POD 8080:8080 &
 kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
-echo "You can access Jenkins through https://localhost:8080"
+echo "You can access Jenkins through https://localhost:8080" #admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
 echo "You can access Mongo Express through https://localhost:8081" #admin/pass
 
 # sudo rm -rf venv
