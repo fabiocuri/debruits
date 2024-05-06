@@ -8,15 +8,15 @@ E-mail: fcuri91@gmail.com
 
 ## Setup
 
-1. Install docker, kubectl and kind locally.
-2. Create a Cluster element that will expose the local IP Address.
-3. Start Jenkins.
-
 ```
 bash configure.sh
 ```
 
 ## Configure Jenkins
+
+```
+bash configure-jenkins.sh
+```
 
 1. Go to Jenkins, click on "Build Executor Status", then the main cluster, and set number of executors to 0, and create a label (e.g. "kubernetes").
 2. Install the Kubernetes plugin.
