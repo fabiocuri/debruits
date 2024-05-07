@@ -12,7 +12,7 @@ pipeline {
             - /bin/bash
             - -c
             - |
-              apt-get update && apt-get install libgl1
+              apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0
             args:
             - "cat"
             tty: true
