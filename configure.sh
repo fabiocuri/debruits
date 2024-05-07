@@ -37,7 +37,6 @@ kubectl create namespace jenkins
 kubens jenkins
 helm repo add jenkins https://charts.jenkins.io
 helm repo update
-#helm install jenkins jenkins/jenkins -f kubernetes/jenkins.yaml
 helm install jenkins jenkins/jenkins
 kubectl apply -f kubernetes/jenkins-token.yaml
 echo "-----------BEGINNING TOKEN-----------"
@@ -48,6 +47,7 @@ kubectl create rolebinding jenkins-admin-binding --clusterrole=admin --serviceac
 echo "--------------------------------------------"
 echo "Setting up MongoDB..."
 echo "--------------------------------------------"
+sleep 20
 kubectl apply -f kubernetes/debruits-configmap.yaml
 kubectl apply -f kubernetes/debruits-secret.yaml
 kubectl apply -f kubernetes/mongodb.yaml
@@ -59,13 +59,6 @@ echo "--------------------------------------------"
 echo "Setting up Mongo Express..."
 echo "--------------------------------------------"
 kubectl apply -f kubernetes/mongodb-express.yaml
-
-echo "--------------------------------------------"
-echo "Creating Ingress elements..."
-echo "--------------------------------------------"
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-helm install ingress-nginx ingress-nginx/ingress-nginx
 
 echo "--------------------------------------------"
 echo "Exposing ports..."
@@ -83,5 +76,5 @@ kubectl port-forward $JENKINS_POD 8080:8080 &
 kubectl port-forward $MONGODB_POD 27017:27017 &
 kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
 echo "You can access Jenkins through https://localhost:8080" #admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
-echo "You can access MongoDB through https://localhost:27017" #admin/pass
+echo "You can access MongoDB through https://localhost:27017 and https://${CLUSTER_NODE_ID}:30000" #admin/pass
 echo "You can access Mongo Express through https://localhost:8081" #admin/pass

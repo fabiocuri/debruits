@@ -1,11 +1,4 @@
 
-        stage('encode-data') {
-            steps {
-                script {
-                    sh "${PYTHON_VERSION} ./src/encode_images.py"
-                }
-            }
-        }
         stage('preprocess-data') {
             steps {
                 script {

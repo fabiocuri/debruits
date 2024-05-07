@@ -22,7 +22,7 @@ pipeline {
         }
       }
     }
-    stage('download-data') {
+    stage('data-download') {
       steps {
         container('python') {
           sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
@@ -31,17 +31,31 @@ pipeline {
         }
       }
     }
-    stage('encode-data') {
+    stage('data-encode') {
       steps {
         container('python') {
           sh 'python ./src/encode_images.py'
         }
       }
     }
-    stage('preprocess-data') {
+    stage('data-preprocess') {
       steps {
         container('python') {
           sh 'python ./src/preprocess.py'
+        }
+      }
+    }
+    stage('model-train') {
+      steps {
+        container('python') {
+          sh 'python ./src/train.py'
+        }
+      }
+    }
+    stage('model-inference') {
+      steps {
+        container('python') {
+          sh 'python ./src/inference.py'
         }
       }
     }

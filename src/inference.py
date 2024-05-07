@@ -1,11 +1,8 @@
-import yaml
-from gridfs import GridFS
 from tensorflow.keras.models import model_from_json
 from tqdm import tqdm
 
 from encode_images import (
     connect_to_mongodb,
-    delete_all_documents_in_collection,
     load_yaml,
 )
 from train import preprocess_chunks
@@ -20,24 +17,16 @@ class Inference:
 
     def __init__(self):
 
-        self.yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
-        self.db = connect_to_mongodb(self.yaml_data)
+        self.config = load_yaml("config_pipeline.yaml")
+        self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
+        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
+        self.LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
 
-        INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
-        LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
-
-        self.model_name = f"inputfilter_{INPUT_FILTER}_targetfilter_{TARGET_FILTER}_lr_{LEARNING_RATE}"
-
-        self.fs = GridFS(self.db)
-
-        self.collection_test_inference = (
-            self.yaml_data[f"mongoDbtestCollectionInference"] + "_" + self.model_name
+        self.model_name = (
+            f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
         )
-        delete_all_documents_in_collection(self.db, self.collection_test_inference)
-        self.collection_test_inference = self.db[self.collection_test_inference]
 
         self.infere()
 
@@ -54,11 +43,8 @@ class Inference:
 
     def infere(self):
 
-        trainA, trainB = preprocess_chunks(id_name="test.npz", db=self.db)
-
-        generator_model = self.load_model_from_chunks(
-            id_name="generator_model" + "_" + self.model_name + ".h5", db=self.db
-        )
+        trainA, trainB = preprocess_chunks(fs=self.fs, id_name=f"test_preprocessed_{self.model_name}", db=self.db)
+        generator_model = self.load_model_from_chunks(id_name=f"generator_model_{self.model_name}", db=self.db)
 
         for ix in tqdm(range(0, trainA.shape[0], 1)):
 
@@ -71,13 +57,8 @@ class Inference:
             X_fakeB = X_fakeB[0]
 
             image_bytes = X_fakeB.tobytes()
-            filename = f"image_{ix}_final"
+            filename = f"test_image_{ix}_{self.model_name}_inference"
             self.fs.put(image_bytes, filename=filename)
-            image_doc = {
-                "filename": filename,
-                "base64_image": self.fs.get_last_version(filename)._id,
-            }
-            self.collection_test_inference.insert_one(image_doc)
 
 
 if __name__ == "__main__":

@@ -58,7 +58,7 @@ def preprocess_data(db, fs, config):
 
 def main():
 
-    config = load_yaml(yaml_path="config.yaml")
+    config = load_yaml(yaml_path="config_pipeline.yaml")
     db, fs = connect_to_mongodb(config=config)
     preprocess_data(db=db, fs=fs, config=config)
 

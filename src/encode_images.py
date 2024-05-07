@@ -44,7 +44,7 @@ def encode_images(db, config):
 
 def main():
 
-    config = load_yaml(yaml_path="config.yaml")
+    config = load_yaml(yaml_path="config_pipeline.yaml")
     db, _ = connect_to_mongodb(config=config)
     encode_images(db=db, config=config)
 

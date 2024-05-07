@@ -27,7 +27,7 @@ class Train:
 
     def __init__(self):
 
-        self.config = load_yaml(yaml_path="config.yaml")
+        self.config = load_yaml(yaml_path="config_pipeline.yaml")
 
         self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
         self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
@@ -40,8 +40,7 @@ class Train:
             f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
         )
 
-        self.yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
-        self.db, self.fs = connect_to_mongodb(self.yaml_data)
+        self.db, self.fs = connect_to_mongodb(config=self.config)
 
         self.train_dataset = preprocess_chunks(
             fs=self.fs, id_name=f"train_preprocessed_{self.model_name}", db=self.db
