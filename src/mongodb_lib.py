@@ -27,9 +27,10 @@ def connect_to_mongodb(config):
         mongodb_password = base64.b64decode(config["mongodbPasswordBase64"]).decode(
             "utf-8"
         )
-        mongodb_port = str(config["mongoDbPort"])
+        cluster_node_id = str(config["clusterNodeId"])
+        mongodb_nodeport_port = str(config["mongoDbNodeportPort"])
         client = MongoClient(
-            f"mongodb://{mongodb_username}:{mongodb_password}@localhost:{mongodb_port}/?authSource=admin"
+            f"mongodb://{mongodb_username}:{mongodb_password}@{cluster_node_id}:{mongodb_nodeport_port}/?authSource=admin"
         )
         db = client[config["mongoDbDatabase"]]
 

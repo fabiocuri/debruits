@@ -1,10 +1,11 @@
-
 mongodbUsernameBase64: ZGVicnVpdHM=
 mongodbPasswordBase64: ZGVicnVpdHM=
 mongoDbPort: 27017
 mongoDbDatabase: debruits
 mongoDbtrainCollection: train-raw
 mongoDbtestCollection: test-raw
+clusterNodeId: $CLUSTER_NODE_ID
+mongoDbNodeportPort: 30000
 model_config:
   INPUT_FILTER: "original"
   TARGET_FILTER: "edges"

@@ -51,6 +51,9 @@ echo "--------------------------------------------"
 kubectl apply -f kubernetes/debruits-configmap.yaml
 kubectl apply -f kubernetes/debruits-secret.yaml
 kubectl apply -f kubernetes/mongodb.yaml
+export CLUSTER_NODE_ID=$(kubectl get node -o wide | awk 'NR==2 {print $6}')
+cp config.yaml config_pipeline.yaml
+sed -i "s/\$CLUSTER_NODE_ID/$cluster_node_id/" config_pipeline.yaml
 
 echo "--------------------------------------------"
 echo "Setting up Mongo Express..."
@@ -63,8 +66,6 @@ echo "--------------------------------------------"
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
 helm install ingress-nginx ingress-nginx/ingress-nginx
-
-kubectl apply -f kubernetes/mongodb-ingress.yaml
 
 echo "--------------------------------------------"
 echo "Exposing ports..."
@@ -84,9 +85,3 @@ kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
 echo "You can access Jenkins through https://localhost:8080" #admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
 echo "You can access MongoDB through https://localhost:27017" #admin/pass
 echo "You can access Mongo Express through https://localhost:8081" #admin/pass
-
-
-# sudo rm -rf venv
-# sudo apt install python3.10-venv
-# python3.10 -m venv venv
-# source venv/bin/activate
