@@ -20,13 +20,6 @@ pipeline {
                 }
             }
         }
-        stage('install-python-requirements') {
-            steps {
-                script {
-                    sh 'pip install -r requirements.txt'
-                }
-            }
-        }
         stage('encode-data') {
             steps {
                 script {
