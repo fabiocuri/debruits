@@ -18,17 +18,17 @@ pipeline {
     stage('install-requirements') {
       steps {
         container('python') {
-          sh 'python -m venv venv'
-          sh 'source venv/bin/activate'
           sh 'pip install -r requirements.txt'
         }
       }
     }
     stage('download-data') {
       steps {
+        container('python') {
           sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
           sh 'unzip data.zip'
           sh 'rm -rf data.zip'
+        }
       }
     }
   }
