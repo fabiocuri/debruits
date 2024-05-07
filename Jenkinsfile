@@ -38,5 +38,12 @@ pipeline {
         }
       }
     }
+    stage('preprocess-data') {
+      steps {
+        container('python') {
+          sh 'python ./src/preprocess.py'
+        }
+      }
+    }
   }
 }

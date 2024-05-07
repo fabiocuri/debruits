@@ -5,3 +5,7 @@ mongoDbPort: 27017
 mongoDbDatabase: debruits
 mongoDbtrainCollection: train-raw
 mongoDbtestCollection: test-raw
+model_config:
+  INPUT_FILTER: "original"
+  TARGET_FILTER: "edges"
+  LEARNING_RATE: 0.001

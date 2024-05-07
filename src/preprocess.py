@@ -9,9 +9,7 @@ from image import ImageClass
 from mongodb_lib import connect_to_mongodb, load_yaml
 
 
-def preprocess_data(db, fs, yaml_data):
-
-    config = load_yaml(yaml_path="config.yaml")
+def preprocess_data(db, fs, config):
 
     INPUT_FILTER = config["model_config"]["INPUT_FILTER"]
     TARGET_FILTER = config["model_config"]["TARGET_FILTER"]
@@ -27,7 +25,7 @@ def preprocess_data(db, fs, yaml_data):
 
             src_list, tar_list = [], []
 
-            collection = db[yaml_data[f"mongoDb{data_type}Collection"]]
+            collection = db[config[f"mongoDb{data_type}Collection"]]
 
             cursor = list(collection.find({}))
 
@@ -60,9 +58,9 @@ def preprocess_data(db, fs, yaml_data):
 
 def main():
 
-    yaml_data = load_yaml(yaml_path="debruits-kubernetes/values.yaml")
-    db, fs = connect_to_mongodb(yaml_data=yaml_data)
-    preprocess_data(db=db, fs=fs, yaml_data=yaml_data)
+    config = load_yaml(yaml_path="config.yaml")
+    db, fs = connect_to_mongodb(config=config)
+    preprocess_data(db=db, fs=fs, config=config)
 
 
 if __name__ == "__main__":
