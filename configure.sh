@@ -62,14 +62,18 @@ echo "Exposing ports..."
 echo "--------------------------------------------"
 sleep 90
 export JENKINS_POD=$(kubectl get pods -l app.kubernetes.io/name=jenkins -o jsonpath='{.items[0].metadata.name}')
+export MONGODB_POD=$(kubectl get pods -l app=mongodb -o jsonpath='{.items[0].metadata.name}')
 export MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -o jsonpath='{.items[0].metadata.name}')
 {
   kill -9 $(lsof -t -i:8080) || true
+  kill -9 $(lsof -t -i:27017) || true
   kill -9 $(lsof -t -i:8081) || true
 } &>/dev/null
 kubectl port-forward $JENKINS_POD 8080:8080 &
+kubectl port-forward $MONGODB_POD 27017:27017 &
 kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
 echo "You can access Jenkins through https://localhost:8080" #admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
+echo "You can access MongoDB through https://localhost:27017" #admin/pass
 echo "You can access Mongo Express through https://localhost:8081" #admin/pass
 
 # sudo rm -rf venv

@@ -17,21 +17,21 @@ def load_yaml(yaml_path):
         return yaml.safe_load(file)
 
 
-def connect_to_mongodb(yaml_data):
+def connect_to_mongodb(config):
 
     try:
 
-        mongodb_username = base64.b64decode(yaml_data["mongodbUsernameBase64"]).decode(
+        mongodb_username = base64.b64decode(config["mongodbUsernameBase64"]).decode(
             "utf-8"
         )
-        mongodb_password = base64.b64decode(yaml_data["mongodbPasswordBase64"]).decode(
+        mongodb_password = base64.b64decode(config["mongodbPasswordBase64"]).decode(
             "utf-8"
         )
-        mongodb_port = str(yaml_data["mongoDbPort"])
+        mongodb_port = str(config["mongoDbPort"])
         client = MongoClient(
             f"mongodb://{mongodb_username}:{mongodb_password}@localhost:{mongodb_port}/?authSource=admin"
         )
-        db = client[yaml_data["mongoDbDatabase"]]
+        db = client[config["mongoDbDatabase"]]
 
         fs = GridFS(db)
 

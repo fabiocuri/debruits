@@ -31,5 +31,12 @@ pipeline {
         }
       }
     }
+    stage('encode-data') {
+      steps {
+        container('python') {
+          sh 'python ./src/encode_images.py'
+        }
+      }
+    }
   }
 }

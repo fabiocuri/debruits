@@ -14,13 +14,11 @@ bash configure.sh
 
 ## Configure Jenkins
 
-1. Go to Jenkins, click on "Build Executor Status", then the main cluster, and set number of executors to 0, and create a label (e.g. "kubernetes").
-2. Install the Kubernetes plugin.
-3. Open "Manage Jenkins", "Clouds", "New cloud" and create a "kubernetes" Cloud of type Kubernetes.
-   Add the URL that is the result of "kubectl cluster-info --context kind-kind".
+1. Open Jenkins and "Build Executor Status" > Main cluster
+2. Set Number of executor=0, create a label (e.g. "kubernetes-cluster") and select "Only build jobs with labels...".
+3. Install the Kubernetes plugin.
+4. Create a new Cloud of type Kubernetes.
+   URL is the result of "kubectl cluster-info --context kind-kind".
    Add "jenkins" as namespace.
-   Click on "Disable https certificate check".
+   Select "Disable https certificate check".
    Create a new credential called "k8s-token" as long text, and paste the TOKEN value.
-   Select "Websocket" and click on save.
-
-## Create Pipeline in Jenkins
