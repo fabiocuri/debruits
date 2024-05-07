@@ -3,4 +3,3 @@ __pycache__/
 venv
 data
 data.zip
-config_pipeline.yaml
