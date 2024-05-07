@@ -1,0 +1,17 @@
+mongodbUsernameBase64: ZGVicnVpdHM=
+mongodbPasswordBase64: ZGVicnVpdHM=
+mongoDbPort: 27017
+mongoDbDatabase: debruits
+mongoDbtrainCollection: train-raw
+mongoDbtestCollection: test-raw
+clusterNodeId: 172.19.0.2
+mongoDbNodeportPort: 30000
+model_config:
+  INPUT_FILTER: "original"
+  TARGET_FILTER: "edges"
+  LEARNING_RATE: 0.001
+  N_EPOCHS: 1
+  BATCH_SIZE: 1
+image_config:
+  DIM: 1024
+  BLUR: 20
