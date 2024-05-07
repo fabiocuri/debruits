@@ -7,8 +7,7 @@ pipeline {
         stage('install-dependencies') {
             steps {
                 script {
-                    sh 'apt-get update && apt-get install -y python3.10 python3-pip'
-                    sh 'pip install gdown'
+                    sh 'pip install -r requirements.txt'
                 }
             }
         }
