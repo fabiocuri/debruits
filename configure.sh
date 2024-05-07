@@ -82,6 +82,13 @@ echo "You can access Mongo Express through https://localhost:8081" #admin/pass
 echo "--------------------------------------------"
 echo "Downloading data..."
 echo "--------------------------------------------"
+sudo apt install python3.10-venv
+sudo rm -rf venv && python3.10 -m venv venv
+source venv/bin/activate
+virtualenv venv && source venv/bin/activate
+pip install -r requirements.txt
 gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD
-unzip data.zip
-rm -rf data.zip
+unzip data.zip && sudo rm -rf data.zip
+python ./src/encode_images.py
+sudo rm -rf venv data
+deactivate
