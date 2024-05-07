@@ -29,7 +29,7 @@ def connect_to_mongodb(config):
         )
         mongodb_port = str(config["mongoDbPort"])
         client = MongoClient(
-            f"mongodb://{mongodb_username}:{mongodb_password}@localhost:{mongodb_port}/?authSource=admin"
+            f"mongodb://{mongodb_username}:{mongodb_password}@192.168.1.3:{mongodb_port}/?authSource=admin"
         )
         db = client[config["mongoDbDatabase"]]
 
