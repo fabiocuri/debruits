@@ -33,6 +33,9 @@ kubectl cluster-info --context kind-kind
 echo "--------------------------------------------"
 echo "Setting up Jenkins..."
 echo "--------------------------------------------"
+docker build -t jenkins-root .
+docker tag jenkins-root:latest fabiocuri/jenkins-root:latest
+docker push fabiocuri/jenkins-root:latest
 kubectl create namespace jenkins
 kubens jenkins
 helm repo add jenkins https://charts.jenkins.io
@@ -62,8 +65,6 @@ echo "--------------------------------------------"
 sleep 90
 export JENKINS_POD=$(kubectl get pods -l app.kubernetes.io/name=jenkins -o jsonpath='{.items[0].metadata.name}')
 export MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -o jsonpath='{.items[0].metadata.name}')
-echo $JENKINS_POD
-echo $MONGO_EXPRESS_POD
 {
   kill -9 $(lsof -t -i:8080) || true
   kill -9 $(lsof -t -i:8081) || true
