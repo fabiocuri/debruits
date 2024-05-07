@@ -33,14 +33,12 @@ kubectl cluster-info --context kind-kind
 echo "--------------------------------------------"
 echo "Setting up Jenkins..."
 echo "--------------------------------------------"
-docker build -t jenkins-root .
-docker tag jenkins-root:latest fabiocuri/jenkins-root:latest
-docker push fabiocuri/jenkins-root:latest
 kubectl create namespace jenkins
 kubens jenkins
 helm repo add jenkins https://charts.jenkins.io
 helm repo update
-helm install jenkins jenkins/jenkins -f ./kubernetes/jenkins.yaml
+#helm install jenkins jenkins/jenkins -f ./kubernetes/jenkins.yaml
+helm install jenkins jenkins/jenkins
 kubectl apply -f ./kubernetes/jenkins-token.yaml
 echo "-----------BEGINNING TOKEN-----------"
 kubectl describe secret $(kubectl describe serviceaccount jenkins | grep token | awk '{print $2}')
