@@ -22,3 +22,4 @@ bash configure.sh
    Add "jenkins" as namespace.
    Select "Disable https certificate check".
    Create a new credential called "k8s-token" as long text, and paste the TOKEN value.
+5. Create and run a new pipeline.
