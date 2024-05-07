@@ -1,10 +1,7 @@
 from tensorflow.keras.models import model_from_json
 from tqdm import tqdm
 
-from encode_images import (
-    connect_to_mongodb,
-    load_yaml,
-)
+from encode_images import connect_to_mongodb, load_yaml
 from train import preprocess_chunks
 
 
@@ -43,8 +40,12 @@ class Inference:
 
     def infere(self):
 
-        trainA, trainB = preprocess_chunks(fs=self.fs, id_name=f"test_preprocessed_{self.model_name}", db=self.db)
-        generator_model = self.load_model_from_chunks(id_name=f"generator_model_{self.model_name}", db=self.db)
+        trainA, trainB = preprocess_chunks(
+            fs=self.fs, id_name=f"test_preprocessed_{self.model_name}", db=self.db
+        )
+        generator_model = self.load_model_from_chunks(
+            id_name=f"generator_model_{self.model_name}", db=self.db
+        )
 
         for ix in tqdm(range(0, trainA.shape[0], 1)):
 

@@ -1,4 +1,3 @@
-import yaml
 from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model

@@ -10,7 +10,6 @@ from encode_images import (
     delete_all_documents_in_collection,
     load_yaml,
 )
-from train import load_data_from_chunks
 
 
 class SuperResolution:
