@@ -12,7 +12,7 @@ pipeline {
             - /bin/bash
             - -c
             - |
-              apt-get update && apt-get install libgl1-mesa-glx
+              apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
             args:
             - "cat"
             tty: true
