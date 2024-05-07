@@ -9,7 +9,12 @@ pipeline {
           - name: python
             image: python:3.10.12
             command:
-            - cat
+            - /bin/bash
+            - -c
+            - |
+              apt-get update && apt-get install libgl1-mesa-glx
+            args:
+            - "cat"
             tty: true
         '''
     }
