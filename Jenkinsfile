@@ -22,13 +22,6 @@ pipeline {
         }
       }
     }
-    stage('data-encode') {
-      steps {
-        container('python') {
-          sh 'python ./src/encode_images.py'
-        }
-      }
-    }
     stage('data-preprocess') {
       steps {
         container('python') {
