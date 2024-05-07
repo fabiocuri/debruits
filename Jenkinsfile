@@ -22,15 +22,6 @@ pipeline {
         }
       }
     }
-    stage('data-download') {
-      steps {
-        container('python') {
-          sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
-          sh 'unzip data.zip'
-          sh 'rm -rf data.zip'
-        }
-      }
-    }
     stage('data-encode') {
       steps {
         container('python') {

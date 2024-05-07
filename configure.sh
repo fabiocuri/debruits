@@ -78,3 +78,10 @@ kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
 echo "You can access Jenkins through https://localhost:8080" #admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
 echo "You can access MongoDB through https://localhost:27017 and https://${CLUSTER_NODE_ID}:30000" #admin/pass
 echo "You can access Mongo Express through https://localhost:8081" #admin/pass
+
+echo "--------------------------------------------"
+echo "Downloading data..."
+echo "--------------------------------------------"
+gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD
+unzip data.zip
+rm -rf data.zip
