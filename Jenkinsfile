@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-        PYTHON_VERSION = 'python3.10'
-    }
     stages {
         stage('install-dependencies') {
             steps {
