@@ -12,21 +12,22 @@ from mongodb_lib import connect_to_mongodb, load_yaml
 
 def preprocess_data(db, fs, config):
 
-    INPUT_FILTER = sys.argv[1]
-    TARGET_FILTER = sys.argv[2]
-    LEARNING_RATE = sys.argv[3]
+    DATASET = sys.argv[1]
+    INPUT_FILTER = sys.argv[2]
+    TARGET_FILTER = sys.argv[3]
+    LEARNING_RATE = sys.argv[4]
 
     model_name = f"{INPUT_FILTER}_{TARGET_FILTER}_{LEARNING_RATE}"
 
     for data_type in ["train", "test"]:
 
-        filename = f"{data_type}_preprocessed_{model_name}"
+        filename = f"{DATASET}_{data_type}_preprocessed_{model_name}"
 
         if fs.find_one({"filename": filename}) is None:
 
             src_list, tar_list = [], []
 
-            collection = db[config[f"mongoDb{data_type}Collection"]]
+            collection = db[DATASET + "_" + config[f"mongoDb{data_type}Collection"]]
 
             cursor = list(collection.find({}))
 

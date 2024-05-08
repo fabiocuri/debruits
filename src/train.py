@@ -30,9 +30,10 @@ class Train:
 
         self.config = load_yaml(yaml_path="config_pipeline.yaml")
 
-        self.INPUT_FILTER = sys.argv[1]
-        self.TARGET_FILTER = sys.argv[2]
-        self.LEARNING_RATE = sys.argv[3]
+        self.DATASET = sys.argv[1]
+        self.INPUT_FILTER = sys.argv[2]
+        self.TARGET_FILTER = sys.argv[3]
+        self.LEARNING_RATE = sys.argv[4]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
@@ -44,13 +45,22 @@ class Train:
         self.db, self.fs = connect_to_mongodb(config=self.config)
 
         self.train_dataset = preprocess_chunks(
-            fs=self.fs, id_name=f"train_preprocessed_{self.model_name}", db=self.db
+            fs=self.fs,
+            id_name=f"{self.DATASET}_train_preprocessed_{self.model_name}",
+            db=self.db,
         )
         self.test_dataset = preprocess_chunks(
-            fs=self.fs, id_name=f"test_preprocessed_{self.model_name}", db=self.db
+            fs=self.fs,
+            id_name=f"{self.DATASET}_test_preprocessed_{self.model_name}",
+            db=self.db,
         )
 
-        if self.fs.find_one({"filename": f"gan_model_{self.model_name}"}) is None:
+        if (
+            self.fs.find_one(
+                {"filename": f"{self.DATASET}_gan_model_{self.model_name}"}
+            )
+            is None
+        ):
 
             self.define_discriminator()
             self.define_generator()
@@ -244,23 +254,23 @@ class Train:
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
                     image_bytes = X_fakeB.tobytes()
-                    filename = f"test_image_{ix}_step_{i}_{self.model_name}_evolution"
+                    filename = f"{self.DATASET}_test_image_{ix}_step_{i}_{self.model_name}_evolution"
                     self.fs.put(image_bytes, filename=filename)
 
         save_model(
             fs=self.fs,
             model_object=self.discriminator_model,
-            model_object_name=f"discriminator_model_{self.model_name}",
+            model_object_name=f"{self.DATASET}_discriminator_model_{self.model_name}",
         )
         save_model(
             fs=self.fs,
             model_object=self.generator_model,
-            model_object_name=f"generator_model_{self.model_name}",
+            model_object_name=f"{self.DATASET}_generator_model_{self.model_name}",
         )
         save_model(
             fs=self.fs,
             model_object=self.gan_model,
-            model_object_name=f"gan_model_{self.model_name}",
+            model_object_name=f"{self.DATASET}_gan_model_{self.model_name}",
         )
 
 

@@ -19,9 +19,10 @@ class Inference:
         self.config = load_yaml("config_pipeline.yaml")
         self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.INPUT_FILTER = sys.argv[1]
-        self.TARGET_FILTER = sys.argv[2]
-        self.LEARNING_RATE = sys.argv[3]
+        self.DATASET = sys.argv[1]
+        self.INPUT_FILTER = sys.argv[2]
+        self.TARGET_FILTER = sys.argv[3]
+        self.LEARNING_RATE = sys.argv[4]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
 
         self.model_name = (
@@ -44,10 +45,12 @@ class Inference:
     def infere(self):
 
         trainA, trainB = preprocess_chunks(
-            fs=self.fs, id_name=f"test_preprocessed_{self.model_name}", db=self.db
+            fs=self.fs,
+            id_name=f"{self.DATASET}_test_preprocessed_{self.model_name}",
+            db=self.db,
         )
         generator_model = self.load_model_from_chunks(
-            id_name=f"generator_model_{self.model_name}", db=self.db
+            id_name=f"{self.DATASET}_generator_model_{self.model_name}", db=self.db
         )
 
         for ix in tqdm(range(0, trainA.shape[0], 1)):
@@ -60,7 +63,9 @@ class Inference:
             X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
             image_bytes = X_fakeB.tobytes()
-            filename = f"test_image_{ix}_step_1_{self.model_name}_inference"
+            filename = (
+                f"{self.DATASET}_test_image_{ix}_step_1_{self.model_name}_inference"
+            )
             self.fs.put(image_bytes, filename=filename)
 
 

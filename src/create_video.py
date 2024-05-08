@@ -20,9 +20,10 @@ class Frames2Videos:
         self.config = load_yaml("config_pipeline.yaml")
         self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.INPUT_FILTER = sys.argv[1]
-        self.TARGET_FILTER = sys.argv[2]
-        self.LEARNING_RATE = sys.argv[3]
+        self.DATASET = sys.argv[1]
+        self.INPUT_FILTER = sys.argv[2]
+        self.TARGET_FILTER = sys.argv[3]
+        self.LEARNING_RATE = sys.argv[4]
 
         self.model_name = (
             f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
@@ -39,24 +40,27 @@ class Frames2Videos:
     def extract_ids(self, image_name):
 
         parts = image_name.split("_")
-        id1 = int(parts[2])
-        id2 = int(parts[4])
+        id1 = int(parts[3])
+        id2 = int(parts[5])
 
         return id1, id2, image_name
 
     def create_video(self, data_type):
 
+        starting = f"{self.DATASET}_"
         ending = f"_{self.model_name}_{data_type}_super_resolution"
 
         imgs = [
             file.filename
-            for file in self.fs.find({"filename": {"$regex": f"{ending}$"}})
+            for file in self.fs.find(
+                {"filename": {"$regex": f"^{starting}.*{ending}$"}}
+            )
         ]
 
         imgs = sorted(imgs, key=self.extract_ids)
         imgs = list(dict.fromkeys(imgs))
 
-        temp_file_name = f"{ending}.mp4"
+        temp_file_name = f"{starting}{ending}.mp4"
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
         video_writer = cv2.VideoWriter(

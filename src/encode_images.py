@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 
 from tqdm import tqdm
 
@@ -15,9 +16,11 @@ logging.basicConfig(level=logging.INFO)
 
 def encode_images(db, config):
 
+    DATASET = sys.argv[1]
+
     for data_type in ["train", "test"]:
 
-        collection_name = config[f"mongoDb{data_type}Collection"]
+        collection_name = DATASET + "_" + config[f"mongoDb{data_type}Collection"]
         delete_collection(db=db, collection_name=collection_name)
 
         collection = db[collection_name]

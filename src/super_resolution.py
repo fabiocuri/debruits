@@ -19,9 +19,10 @@ class SuperResolution:
         self.config = load_yaml("config_pipeline.yaml")
         self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.INPUT_FILTER = sys.argv[1]
-        self.TARGET_FILTER = sys.argv[2]
-        self.LEARNING_RATE = sys.argv[3]
+        self.DATASET = sys.argv[1]
+        self.INPUT_FILTER = sys.argv[2]
+        self.TARGET_FILTER = sys.argv[3]
+        self.LEARNING_RATE = sys.argv[4]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
 
         self.model_name = (
@@ -37,11 +38,14 @@ class SuperResolution:
 
     def improve(self, data_type):
 
+        starting = f"{self.DATASET}_"
         ending = f"_{self.model_name}_{data_type}"
 
         imgs = [
             file.filename
-            for file in self.fs.find({"filename": {"$regex": f"{ending}$"}})
+            for file in self.fs.find(
+                {"filename": {"$regex": f"^{starting}.*{ending}$"}}
+            )
         ]
 
         for image in tqdm(imgs):
