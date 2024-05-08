@@ -33,10 +33,12 @@ pipeline {
         container('python') {
           script {
             def DATASET = params.DATASET
+            def DATASET_PATH
+
             if (params.DATASET == 'rego') {
-              def DATASET_PATH = '1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
+              DATASET_PATH = '1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
             } else if (params.DATASET == 'parque') {
-              def DATASET_PATH = '1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY'
+              DATASET_PATH = '1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY'
             }
           }
           sh "echo $DATASET"
