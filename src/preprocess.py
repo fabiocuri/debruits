@@ -1,5 +1,6 @@
 import base64
 import io
+import sys
 
 import numpy as np
 from PIL import Image
@@ -11,9 +12,9 @@ from mongodb_lib import connect_to_mongodb, load_yaml
 
 def preprocess_data(db, fs, config):
 
-    INPUT_FILTER = config["model_config"]["INPUT_FILTER"]
-    TARGET_FILTER = config["model_config"]["TARGET_FILTER"]
-    LEARNING_RATE = config["model_config"]["LEARNING_RATE"]
+    INPUT_FILTER = sys.argv[1]
+    TARGET_FILTER = sys.argv[2]
+    LEARNING_RATE = sys.argv[3]
 
     model_name = f"{INPUT_FILTER}_{TARGET_FILTER}_{LEARNING_RATE}"
 

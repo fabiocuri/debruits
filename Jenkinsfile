@@ -33,7 +33,7 @@ pipeline {
           def inputFilter = params.INPUT_FILTER
           def targetFilter = params.TARGET_FILTER
           def learningRate = params.LEARNING_RATE
-          sh 'python ./src/preprocess.py'
+          sh 'python ./src/preprocess.py' $inputFilter $targetFilter $learningRate
         }
       }
     }
