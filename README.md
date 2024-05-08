@@ -1,25 +1,28 @@
 # De Bruits
 
-Project that involves a GAN and creative art.
+**Project Description:** De Bruits is an innovative project by Fabio Curi that merges the realms of Generative Adversarial Networks (GANs) and creative art.
 
-Author: Fabio Curi Paixao 
-
-E-mail: fcuri91@gmail.com
+**Author:** Fabio Curi Paixao  
+**Contact:** fcuri91@gmail.com  
 
 ## Setup
 
-```
+To set up the project, run the following command in your terminal:
+
+```bash
 bash configure.sh
 ```
 
-## Configure Jenkins
+## Jenkins Configuration
 
-1. Open Jenkins and "Build Executor Status" > Main cluster
-2. Set Number of executor=0, create a label (e.g. "kubernetes-cluster") and select "Only build jobs with labels...".
+```markdown
+Configure Jenkins for seamless integration with the project:
+
+1. Open Jenkins and navigate to "Build Executor Status" > Main cluster.
+2. Set the Number of executors to 0 and create a label (e.g., "kubernetes-cluster"). Select "Only build jobs with labels...".
 3. Install the Kubernetes plugin.
-4. Create a new Cloud of type Kubernetes.
-   URL is the result of "kubectl cluster-info --context kind-kind".
-   Add "jenkins" as namespace.
-   Select "Disable https certificate check".
-   Create a new credential called "k8s-token" as long text, and paste the TOKEN value.
+4. Create a new Cloud of type Kubernetes. Use the URL obtained from `kubectl cluster-info --context kind-kind`.
+   - Add "jenkins" as the namespace.
+   - Select "Disable https certificate check".
+   - Create a new credential named "k8s-token" as a long text, and paste the TOKEN value.
 5. Create and run a new pipeline.
