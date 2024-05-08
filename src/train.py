@@ -101,7 +101,7 @@ class Train:
         self.discriminator_model = Model([in_src_image, in_target_image], patch_out)
         self.discriminator_model.compile(
             loss="binary_crossentropy",
-            optimizer=Adam(learning_rate=self.LEARNING_RATE, beta_1=0.5),
+            optimizer=Adam(learning_rate=float(self.LEARNING_RATE), beta_1=0.5),
             loss_weights=[0.5],
         )
 
@@ -184,7 +184,7 @@ class Train:
         self.gan_model = Model(in_src, [dis_out, gen_out])
         self.gan_model.compile(
             loss=["binary_crossentropy", "mae"],
-            optimizer=Adam(lr=self.LEARNING_RATE, beta_1=0.5),
+            optimizer=Adam(lr=float(self.LEARNING_RATE), beta_1=0.5),
             loss_weights=[1, 100],
         )
 
