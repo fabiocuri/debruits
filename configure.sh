@@ -68,17 +68,3 @@ export MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -o jsonpath='{.
 kubectl port-forward $JENKINS_POD 8080:8080 &
 kubectl port-forward $MONGODB_POD 27017:27017 &
 kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
-
-echo "-----------------------------DOWNLOADING DATA--------------------------------"
-echo "-----------------------------------------------------------------------------"
-sudo apt install python3.10-venv
-sudo rm -rf venv data
-sudo rm -rf venv && python3.10 -m venv venv
-source venv/bin/activate
-virtualenv venv && source venv/bin/activate
-pip install -r requirements.txt
-gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD
-unzip data.zip && sudo rm -rf data.zip
-python ./src/encode_images.py
-sudo rm -rf venv data
-deactivate
