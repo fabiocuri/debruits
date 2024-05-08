@@ -1,3 +1,5 @@
+import sys
+
 from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
@@ -28,10 +30,10 @@ class Train:
 
         self.config = load_yaml(yaml_path="config_pipeline.yaml")
 
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
+        self.INPUT_FILTER = sys.argv[1]
+        self.TARGET_FILTER = sys.argv[2]
+        self.LEARNING_RATE = sys.argv[3]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
-        self.LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
 

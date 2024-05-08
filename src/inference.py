@@ -1,3 +1,5 @@
+import sys
+
 from tensorflow.keras.models import model_from_json
 from tqdm import tqdm
 
@@ -17,9 +19,9 @@ class Inference:
         self.config = load_yaml("config_pipeline.yaml")
         self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
-        self.LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
+        self.INPUT_FILTER = sys.argv[1]
+        self.TARGET_FILTER = sys.argv[2]
+        self.LEARNING_RATE = sys.argv[3]
 
         self.model_name = (
             f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"

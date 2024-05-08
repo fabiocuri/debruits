@@ -57,14 +57,14 @@ pipeline {
     stage('model-train') {
       steps {
         container('python') {
-          sh 'python ./src/train.py'
+          sh "python ./src/train.py $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }
     stage('model-inference') {
       steps {
         container('python') {
-          sh 'python ./src/inference.py'
+          sh "python ./src/inference.py $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }
