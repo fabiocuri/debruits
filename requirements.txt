@@ -8,3 +8,4 @@ scikit-image==0.22.0
 tensorflow==2.15.0.post1
 tqdm==4.66.4
 opencv-python-headless
+matplotlib
