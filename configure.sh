@@ -58,7 +58,7 @@ echo "-------------------------INSTALLING MONGO EXPRESS-------------------------
 echo "--------------------------https://localhost:8081-----------------------------"
 kubectl apply -f kubernetes/mongodb-express.yaml
 
-echo "-----------------------------EXPORTING PORTS---------------------------------"
+echo "-----------------------------EXPOSING PORTS---------------------------------"
 echo "-----------------------------------------------------------------------------"
 sleep 90
 export JENKINS_POD=$(kubectl get pods -l app.kubernetes.io/name=jenkins -o jsonpath='{.items[0].metadata.name}')
