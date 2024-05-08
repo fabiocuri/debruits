@@ -30,6 +30,11 @@ spec:
             secretKeyRef:
               name: debruits-secrets
               key: mongodb-password
+        resources:
+          requests:
+            memory: "4Gi"
+          limits:
+            memory: "8Gi"
 ---
 apiVersion: v1
 kind: Service

@@ -39,6 +39,8 @@ pipeline {
               def DATASET_PATH = '1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY'
             }
           }
+          sh "echo $DATASET"
+          sh "echo $DATASET_PATH"
           sh "gdown --id $DATASET_PATH"
           sh 'unzip data.zip && rm -rf data.zip'
         }
