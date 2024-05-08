@@ -49,7 +49,7 @@ Configure Jenkins for seamless integration with the project:
 2. Create a SMTP integration.
 3. Open Jenkins and install the "Extend Email" plugin.
 4. Go to "System" and "Extended E-mail Notification".
-   Set "SMTP server" to "smtp.sendgrid.net".
-   Set "SMTP Port" to 465.
-   Create Sendgrid credentials.
-   Select "Use SSL".
+   - Set "SMTP server" to "smtp.sendgrid.net".
+   - Set "SMTP Port" to 465.
+   - Create Sendgrid credentials.
+   - Select "Use SSL".
