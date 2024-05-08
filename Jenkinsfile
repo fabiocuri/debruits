@@ -11,6 +11,11 @@ pipeline {
             command: ["cat"]
             args: []
             tty: true
+            resources:
+              requests:
+                memory: "16Gi"
+              limits:
+                memory: "48Gi"
       '''
     }
   }
