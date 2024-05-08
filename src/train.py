@@ -244,7 +244,7 @@ class Train:
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
                     image_bytes = X_fakeB.tobytes()
-                    filename = f"test_image_{ix}_step_{i}_{self.model_name}"
+                    filename = f"test_image_{ix}_step_{i}_{self.model_name}_evolution"
                     self.fs.put(image_bytes, filename=filename)
 
         save_model(
