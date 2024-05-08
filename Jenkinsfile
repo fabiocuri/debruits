@@ -104,7 +104,7 @@ pipeline {
               subject: "De Bruits ($DATASET-$INPUT_FILTER-$TARGET_FILTER-$LEARNING_RATE)",
               from: 'debruitsproject@gmail.com',
               to: 'debruitsproject@gmail.com',
-              attachmentsPattern: '**/*.mp4'
+              attachmentsPattern: '**/*.mp4,**/source_example.png,**/target_example.png'
             )
           }
         }

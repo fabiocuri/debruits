@@ -2,6 +2,7 @@ import base64
 import io
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
@@ -31,7 +32,7 @@ def preprocess_data(db, fs, config):
 
             cursor = list(collection.find({}))
 
-            for document in tqdm(cursor):
+            for index, document in enumerate(tqdm(cursor)):
 
                 base64_image_str = document.get("base64_image", "")
                 image_bytes = base64.b64decode(base64_image_str)
@@ -46,6 +47,11 @@ def preprocess_data(db, fs, config):
 
                 src_list.append(input_img.image)
                 tar_list.append(target_img.image)
+
+                if index == 0:
+
+                    plt.imsave("source_example.png", input_img.image, cmap="gray")
+                    plt.imsave("target_example.png", target_img.image, cmap="gray")
 
             src_images_train = np.stack(src_list)
             tar_images_train = np.stack(tar_list)
