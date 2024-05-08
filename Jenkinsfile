@@ -8,15 +8,10 @@ pipeline {
           containers:
           - name: python
             image: python:3.10.12
-            command:
-            - /bin/bash
-            - -c
-            - |
-              apt-get update
-            args:
-            - "cat"
+            command: ["cat"]
+            args: []
             tty: true
-        '''
+      '''
     }
   }
   stages {
