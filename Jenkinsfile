@@ -72,7 +72,6 @@ pipeline {
       steps {
         container('python') {
           sh "python ./src/super_resolution.py $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
-          sh "mv *.mp4 videos/"
         }
       }
     }
@@ -80,6 +79,7 @@ pipeline {
       steps {
         container('python') {
           sh "python ./src/create_video.py $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+          sh "mv *.mp4 videos/"
         }
       }
     }
