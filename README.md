@@ -9,7 +9,7 @@ De Bruits is an innovative project that merges the realms of Generative Adversar
 
 ## Stack
 
-Language: Python, Bash
+Language: Python, Bash, Groovy
 
 CI/CD: Jenkins, Github
 
