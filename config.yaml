@@ -12,3 +12,6 @@ model_config:
 image_config:
   DIM: 1024
   BLUR: 20
+  ENHANCED_WIDTH: 1048
+  ENHANCED_HEIGHT: 524
+  ENHANCEMENT_FACTOR: 2

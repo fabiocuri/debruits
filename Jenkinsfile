@@ -68,5 +68,12 @@ pipeline {
         }
       }
     }
+    stage('super-resolution') {
+      steps {
+        container('python') {
+          sh "python ./src/super_resolution.py $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+        }
+      }
+    }
   }
 }

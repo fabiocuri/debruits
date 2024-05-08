@@ -1,16 +1,13 @@
 from io import BytesIO
 
-import yaml
-from gridfs import GridFS
 from PIL import Image, ImageEnhance
 from tqdm import tqdm
 
 from encode_images import (
     connect_to_mongodb,
-    delete_all_documents_in_collection,
     load_yaml,
 )
-
+import sys
 
 class SuperResolution:
 
@@ -21,46 +18,20 @@ class SuperResolution:
 
     def __init__(self):
 
-        self.yaml_data = load_yaml("./debruits-kubernetes/values.yaml")
-        self.db = connect_to_mongodb(self.yaml_data)
+        self.config = load_yaml("config_pipeline.yaml")
+        self.db, self.fs = connect_to_mongodb(config = self.config)
 
-        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+        self.INPUT_FILTER = sys.argv[1]
+        self.TARGET_FILTER = sys.argv[2]
+        self.LEARNING_RATE = sys.argv[3]
 
-        INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
-        LEARNING_RATE = self.config["model_config"]["LEARNING_RATE"]
-
-        self.model_name = f"inputfilter_{INPUT_FILTER}_targetfilter_{TARGET_FILTER}_lr_{LEARNING_RATE}"
+        self.model_name = (
+            f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
+        )
 
         self.ENHANCED_WIDTH = self.config["image_config"]["ENHANCED_WIDTH"]
         self.ENHANCED_HEIGHT = self.config["image_config"]["ENHANCED_HEIGHT"]
         self.ENHANCEMENT_FACTOR = self.config["image_config"]["ENHANCEMENT_FACTOR"]
-
-        self.collection_test_inference_super_resolution = (
-            self.yaml_data[f"mongoDbtestCollectionInferenceSuperResolution"]
-            + "_"
-            + self.model_name
-        )
-        delete_all_documents_in_collection(
-            self.db, self.collection_test_inference_super_resolution
-        )
-        self.collection_test_inference_super_resolution = self.db[
-            self.collection_test_inference_super_resolution
-        ]
-
-        self.collection_test_evolution_super_resolution = (
-            self.yaml_data[f"mongoDbtestCollectionEvolutionSuperResolution"]
-            + "_"
-            + self.model_name
-        )
-        delete_all_documents_in_collection(
-            self.db, self.collection_test_evolution_super_resolution
-        )
-        self.collection_test_evolution_super_resolution = self.db[
-            self.collection_test_evolution_super_resolution
-        ]
-
-        self.fs = GridFS(self.db)
 
         self.improve()
 
