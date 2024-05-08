@@ -34,7 +34,6 @@ pipeline {
           script {
             def DATASET = params.DATASET
             def DATASET_PATH
-
             if (params.DATASET == 'rego') {
               DATASET_PATH = '1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
             } else if (params.DATASET == 'parque') {
