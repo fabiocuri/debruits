@@ -37,5 +37,6 @@ Configure Jenkins for seamless integration with the project:
    - Add "jenkins" as the namespace.
    - Select "Disable https certificate check".
    - Create a new credential named "k8s-token" as a long text, and paste the TOKEN value.
+     TOKEN is result from `kubectl describe secret $(kubectl describe serviceaccount jenkins | grep token | awk '{print $2}')`.
 5. Create and run a new pipeline pointing to this project.
 6. Install "Stage View" plugin for better visualisation of pipeline.

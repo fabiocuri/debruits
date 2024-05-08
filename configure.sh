@@ -60,7 +60,7 @@ kubectl apply -f kubernetes/mongodb-express.yaml
 
 echo "-----------------------------EXPOSING PORTS---------------------------------"
 echo "-----------------------------------------------------------------------------"
-sleep 90
+sleep 300
 export JENKINS_POD=$(kubectl get pods -l app.kubernetes.io/name=jenkins -o jsonpath='{.items[0].metadata.name}')
 export MONGODB_POD=$(kubectl get pods -l app=mongodb -o jsonpath='{.items[0].metadata.name}')
 export MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -o jsonpath='{.items[0].metadata.name}')
