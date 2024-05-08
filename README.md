@@ -10,8 +10,11 @@ De Bruits is an innovative project that merges the realms of Generative Adversar
 ## Stack
 
 Language: Python, Bash
+
 CI/CD: Jenkins, Github
+
 Database: MongoDB
+
 Deployment: Kubernetes
 
 ## Setup
