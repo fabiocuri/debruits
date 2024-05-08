@@ -7,6 +7,13 @@ De Bruits is an innovative project that merges the realms of Generative Adversar
 
 ![Image Alt Text](image/Expo_7.png)
 
+## Stack
+
+Language: Python, Bash
+CI/CD: Jenkins, Github
+Database: MongoDB
+Deployment: Kubernetes
+
 ## Setup
 
 To set up the project, run the following command in your terminal:
@@ -28,3 +35,4 @@ Configure Jenkins for seamless integration with the project:
    - Select "Disable https certificate check".
    - Create a new credential named "k8s-token" as a long text, and paste the TOKEN value.
 5. Create and run a new pipeline pointing to this project.
+6. Install "Stage View" plugin for better visualisation of pipeline.
