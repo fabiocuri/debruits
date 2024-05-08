@@ -41,7 +41,7 @@ def preprocess_data(db, fs, config):
                 input_img.input_filter(INPUT_FILTER)
 
                 target_img = ImageClass(image=image)
-                target_img.target_filter()
+                target_img.target_filter(TARGET_FILTER)
 
                 src_list.append(input_img.image)
                 tar_list.append(target_img.image)
