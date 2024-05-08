@@ -1,12 +1,11 @@
-import os
-from io import BytesIO
+import sys
 
 import cv2
 import numpy as np
-import yaml
-from googledrive import GoogleDrive
 from PIL import Image
 from tqdm import tqdm
+
+from encode_images import connect_to_mongodb, load_yaml
 
 
 class Frames2Videos:
@@ -18,24 +17,47 @@ class Frames2Videos:
 
     def __init__(self):
 
-        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+        self.config = load_yaml("config_pipeline.yaml")
+        self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.drive_service = GoogleDrive()
+        self.INPUT_FILTER = sys.argv[1]
+        self.TARGET_FILTER = sys.argv[2]
+        self.LEARNING_RATE = sys.argv[3]
+
+        self.model_name = (
+            f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
+        )
 
         self.FPS = self.config["video_config"]["FPS"]
         self.ENHANCED_WIDTH = self.config["image_config"]["ENHANCED_WIDTH"]
         self.ENHANCED_HEIGHT = self.config["image_config"]["ENHANCED_HEIGHT"]
-        self.SUPER_RESOLUTION_FOLDER = self.config["system_config"][
-            "SUPER_RESOLUTION_FOLDER"
+        self.IMAGE_DIM = self.config["image_config"]["DIM"]
+
+        self.create_video("evolution")
+        self.create_video("inference")
+
+    def extract_ids(self, image_name):
+
+        parts = image_name.split("_")
+        id1 = int(parts[2])
+        id2 = int(parts[4])
+
+        return id1, id2, image_name
+
+    def create_video(self, data_type):
+
+        ending = f"_{self.model_name}_{data_type}_super_resolution"
+
+        imgs = [
+            file.filename
+            for file in self.fs.find({"filename": {"$regex": f"{ending}$"}})
         ]
 
-        self.create_video()
+        imgs = sorted(imgs, key=self.extract_ids)
+        imgs = list(dict.fromkeys(imgs))
 
-    def create_video(self):
-
+        temp_file_name = f"{ending}.mp4"
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-
-        temp_file_name = "video.mp4"
 
         video_writer = cv2.VideoWriter(
             temp_file_name,
@@ -44,45 +66,18 @@ class Frames2Videos:
             (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
         )
 
-        for folder in tqdm(self.drive_service.super_resolution_folder_id):
+        for image in tqdm(imgs):
 
-            self.super_resolution_folder_elements_id = self.drive_service.create_folder(
-                parent_folder_id=folder, folder_name="super_resolution"
-            )
+            file = self.fs.find_one({"filename": image})
 
-            elements = self.drive_service.get_items_elements(
-                self.super_resolution_folder_elements_id
-            )
-            elements = sorted(
-                elements, key=lambda x: int(x["name"].split("_")[1].split(".")[0])
-            )
-
-            for element in elements:
-
-                _element = self.drive_service.get_item(element["id"])
-                _element = Image.open(BytesIO(_element))
-                _element = _element.resize(
-                    (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT), Image.ANTIALIAS
-                )
-                _element = np.array(_element.convert("RGB"))[:, :, ::-1]
-                print(_element.shape)
-                video_writer.write(_element)
+            image_bytes = file.read()
+            image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+            data = image_array.reshape(self.ENHANCED_HEIGHT, self.ENHANCED_WIDTH, 3)
+            data = Image.fromarray(data)
+            data = np.array(data.convert("RGB"))[:, :, ::-1]
+            video_writer.write(data)
 
         video_writer.release()
-
-        with open(temp_file_name, "rb") as video_file:
-
-            video_data = BytesIO(video_file.read())
-
-        video_data.seek(0)
-
-        self.drive_service.send_bytes_file(
-            self.drive_service.output_run_id,
-            video_data,
-            f"{self.SUPER_RESOLUTION_FOLDER}.mp4",
-        )
-
-        os.remove(temp_file_name)
 
 
 if __name__ == "__main__":

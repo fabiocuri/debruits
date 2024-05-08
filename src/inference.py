@@ -22,6 +22,7 @@ class Inference:
         self.INPUT_FILTER = sys.argv[1]
         self.TARGET_FILTER = sys.argv[2]
         self.LEARNING_RATE = sys.argv[3]
+        self.IMAGE_DIM = self.config["image_config"]["DIM"]
 
         self.model_name = (
             f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
@@ -56,11 +57,10 @@ class Inference:
             X_fakeB = generator_model.predict(X1)
 
             X_fakeB = (X_fakeB + 1) / 2.0
-
-            X_fakeB = X_fakeB[0]
+            X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
             image_bytes = X_fakeB.tobytes()
-            filename = f"test_image_{ix}_{self.model_name}_inference"
+            filename = f"test_image_{ix}_step_1_{self.model_name}_inference"
             self.fs.put(image_bytes, filename=filename)
 
 

@@ -12,6 +12,8 @@ model_config:
 image_config:
   DIM: 1024
   BLUR: 20
-  ENHANCED_WIDTH: 1048
-  ENHANCED_HEIGHT: 524
+  ENHANCED_WIDTH: 1024
+  ENHANCED_HEIGHT: 512
   ENHANCEMENT_FACTOR: 2
+video_config:
+  FPS: 5
