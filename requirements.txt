@@ -3,7 +3,6 @@ numpy==1.26.2
 PyYAML==6.0.1
 pymongo==4.7.1
 Pillow==9.5.0
-opencv-python==4.8.1.78
 scipy==1.11.4
 scikit-image==0.22.0
 tensorflow==2.15.0.post1
