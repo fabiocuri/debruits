@@ -31,7 +31,7 @@ pipeline {
       steps {
         container('python') {
           sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
-          sh 'unzip data.zip && sudo rm -rf data.zip'
+          sh 'unzip data.zip && rm -rf data.zip'
         }
       }
     }
