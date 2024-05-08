@@ -17,7 +17,7 @@ pipeline {
   parameters {
     choice(name: 'INPUT_FILTER', choices: ['original', 'solarize', 'slic-10', 'slic-100', 'slic-1000', 'color', 'gaussian', 'edges', 'blur', 'sharpen'], description: 'Select input filter')
     choice(name: 'TARGET_FILTER', choices: ['original', 'solarize', 'slic-10', 'slic-100', 'slic-1000', 'color', 'gaussian', 'edges', 'blur', 'sharpen'], description: 'Select target filter')
-    string(name: 'LEARNING_RATE', choices: ['0.01', '0.001', '0.0001'], description: 'Learning rate')
+    choice(name: 'LEARNING_RATE', choices: ['0.01', '0.001', '0.0001'], description: 'Learning rate')
   }
   stages {
     stage('install-requirements') {
