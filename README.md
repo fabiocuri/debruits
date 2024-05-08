@@ -5,6 +5,8 @@ De Bruits is an innovative project that merges the realms of Generative Adversar
 **Author:** Fabio Curi  
 **Contact:** fcuri91@gmail.com  
 
+![Image Alt Text](image/Expo_7.png)
+
 ## Setup
 
 To set up the project, run the following command in your terminal:
