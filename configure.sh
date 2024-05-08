@@ -47,6 +47,7 @@ kubectl apply -f kubernetes/debruits-secret.yaml
 kubectl apply -f kubernetes/mongodb.yaml
 sleep 20
 export CLUSTER_NODE_ID=$(kubectl get node -o wide | awk 'NR==2 {print $6}')
+export TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 envsubst < config.yaml > config_pipeline.yaml
 git add .
 git commit -m "new config"
