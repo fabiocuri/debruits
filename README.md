@@ -1,8 +1,8 @@
 # De Bruits
 
-**Project Description:** De Bruits is an innovative project by Fabio Curi that merges the realms of Generative Adversarial Networks (GANs) and creative art.
+De Bruits is an innovative project that merges the realms of Generative Adversarial Networks (GANs) and creative art.
 
-**Author:** Fabio Curi Paixao  
+**Author:** Fabio Curi  
 **Contact:** fcuri91@gmail.com  
 
 ## Setup
