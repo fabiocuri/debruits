@@ -30,10 +30,10 @@ pipeline {
     stage('data-preprocess') {
       steps {
         container('python') {
-          def inputFilter = params.INPUT_FILTER
-          def targetFilter = params.TARGET_FILTER
-          def learningRate = params.LEARNING_RATE
-          sh 'python ./src/preprocess.py' $inputFilter $targetFilter $learningRate
+          def INPUT_FILTER = params.INPUT_FILTER
+          def TARGET_FILTER = params.TARGET_FILTER
+          def LEARNING_RATE = params.LEARNING_RATE
+          sh 'python ./src/preprocess.py' $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE
         }
       }
     }
