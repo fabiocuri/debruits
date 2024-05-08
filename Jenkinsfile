@@ -23,12 +23,12 @@ pipeline {
       }
     }
     stage('data-preprocess') {
-      parameters {
-        choice(name: 'INPUT_FILTER', choices: ['original', 'solarize', 'slic-10', 'slic-100', 'slic-1000', 'color', 'gaussian', 'edges', 'blur', 'sharpen'], description: 'Select input filter')
-        choice(name: 'TARGET_FILTER', choices: ['original', 'solarize', 'slic-10', 'slic-100', 'slic-1000', 'color', 'gaussian', 'edges', 'blur', 'sharpen'], description: 'Select target filter')
-        choice(name: 'LEARNING_RATE', choices: ['0.01', '0.001', '0.0001'], description: 'Learning rate')
-      }
       steps {
+        input message: 'Please select parameters for data preprocessing', parameters: [
+          choice(name: 'INPUT_FILTER', choices: ['original', 'solarize', 'slic-10', 'slic-100', 'slic-1000', 'color', 'gaussian', 'edges', 'blur', 'sharpen'], description: 'Select input filter'),
+          choice(name: 'TARGET_FILTER', choices: ['original', 'solarize', 'slic-10', 'slic-100', 'slic-1000', 'color', 'gaussian', 'edges', 'blur', 'sharpen'], description: 'Select target filter'),
+          choice(name: 'LEARNING_RATE', choices: ['0.01', '0.001', '0.0001'], description: 'Learning rate')
+        ]
         container('python') {
           script {
             def INPUT_FILTER = params.INPUT_FILTER
