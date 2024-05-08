@@ -25,8 +25,9 @@ kind delete cluster --name kind
 envsubst < kubernetes/cluster.yaml | kind create cluster --retain --config=-
 kubectl cluster-info --context kind-kind
 
+#admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
 echo "----------------------------INSTALLING JENKINS-------------------------------"
-echo "-----------------------------------------------------------------------------"
+echo "--------------------------https://localhost:8080-----------------------------"
 kubectl create namespace jenkins
 kubens jenkins
 helm repo add jenkins https://charts.jenkins.io
@@ -39,17 +40,18 @@ echo "---------------------------------END TOKEN--------------------------------
 kubectl create rolebinding jenkins-admin-binding --clusterrole=admin --serviceaccount=jenkins:jenkins
 
 echo "----------------------------INSTALLING MONGODB-------------------------------"
-echo "-----------------------------------------------------------------------------"
-sleep 20
+echo "--------------------------https://localhost:27017----------------------------"
+echo "----------------------http://${CLUSTER_NODE_ID}:27017------------------------"
 kubectl apply -f kubernetes/debruits-configmap.yaml
 kubectl apply -f kubernetes/debruits-secret.yaml
 kubectl apply -f kubernetes/mongodb.yaml
+sleep 20
 export CLUSTER_NODE_ID=$(kubectl get node -o wide | awk 'NR==2 {print $6}')
-cp config.yaml config_pipeline.yaml
-sed -i "s/\$CLUSTER_NODE_ID/$cluster_node_id/" config_pipeline.yaml
+envsubst < config.yaml > config_pipeline.yaml
 
+#admin/pass
 echo "-------------------------INSTALLING MONGO EXPRESS----------------------------"
-echo "-----------------------------------------------------------------------------"
+echo "--------------------------https://localhost:8081-----------------------------"
 kubectl apply -f kubernetes/mongodb-express.yaml
 
 echo "-----------------------------EXPORTING PORTS---------------------------------"
@@ -66,13 +68,11 @@ export MONGO_EXPRESS_POD=$(kubectl get pods -l app=mongo-express -o jsonpath='{.
 kubectl port-forward $JENKINS_POD 8080:8080 &
 kubectl port-forward $MONGODB_POD 27017:27017 &
 kubectl port-forward $MONGO_EXPRESS_POD 8081:8081 &
-echo "You can access Jenkins through https://localhost:8080" #admin/[kubectl exec -it svc/jenkins bash][cat /run/secrets/additional/chart-admin-password]
-echo "You can access MongoDB through https://localhost:27017 and https://${CLUSTER_NODE_ID}:30000" #admin/pass
-echo "You can access Mongo Express through https://localhost:8081" #admin/pass
 
 echo "-----------------------------DOWNLOADING DATA--------------------------------"
 echo "-----------------------------------------------------------------------------"
 sudo apt install python3.10-venv
+sudo rm -rf venv data
 sudo rm -rf venv && python3.10 -m venv venv
 source venv/bin/activate
 virtualenv venv && source venv/bin/activate
