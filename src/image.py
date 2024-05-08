@@ -20,8 +20,6 @@ class ImageClass:
 
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.BLUR = self.config["image_config"]["BLUR"]
-        self.INPUT_FILTER = self.config["model_config"]["INPUT_FILTER"]
-        self.TARGET_FILTER = self.config["model_config"]["TARGET_FILTER"]
 
         self.resize()
 
@@ -72,10 +70,10 @@ class ImageClass:
             kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
             self.image = cv2.filter2D(src=self.image, ddepth=-1, kernel=kernel)
 
-    def input_filter(self):
+    def input_filter(self, INPUT_FILTER):
 
-        self.apply_filter(self.INPUT_FILTER)
+        self.apply_filter(INPUT_FILTER)
 
-    def target_filter(self):
+    def target_filter(self, TARGET_FILTER):
 
-        self.apply_filter(self.TARGET_FILTER)
+        self.apply_filter(TARGET_FILTER)

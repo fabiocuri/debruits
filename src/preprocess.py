@@ -38,7 +38,7 @@ def preprocess_data(db, fs, config):
                 image = np.array(image_stream)
 
                 input_img = ImageClass(image=image)
-                input_img.input_filter()
+                input_img.input_filter(INPUT_FILTER)
 
                 target_img = ImageClass(image=image)
                 target_img.target_filter()
