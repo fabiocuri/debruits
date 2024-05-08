@@ -12,7 +12,7 @@ pipeline {
             - /bin/bash
             - -c
             - |
-              apt-get update && apt-get install -y python3-opencv && pip install opencv-python
+              apt-get update
             args:
             - "cat"
             tty: true
