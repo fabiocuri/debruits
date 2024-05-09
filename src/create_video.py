@@ -5,7 +5,6 @@ from tqdm import tqdm
 
 from mongodb_lib import load_yaml, connect_to_mongodb
 import numpy as np
-from PIL import Image
 
 class Frames2Videos:
 
