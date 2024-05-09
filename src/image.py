@@ -26,7 +26,7 @@ class ImageClass:
     def resize(self):
 
         self.image = cv2.resize(
-            self.image, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_AREA
+            self.image, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_LINEAR
         )
 
     def apply_filter(self, FILTER):

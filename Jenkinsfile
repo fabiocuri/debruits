@@ -83,13 +83,6 @@ pipeline {
         }
       }
     }
-    stage('super-resolution') {
-      steps {
-        container('python') {
-          sh "python src/super_resolution.py $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
-        }
-      }
-    }
     stage('create-video') {
       steps {
         container('python') {

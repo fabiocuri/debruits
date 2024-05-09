@@ -1,17 +1,15 @@
-import base64
 import io
 import sys
-
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
 from tqdm import tqdm
 
 from image import ImageClass
 from mongodb_lib import connect_to_mongodb, load_yaml
 
 
-def preprocess_data(db, fs, config):
+def preprocess_data(fs):
 
     DATASET = sys.argv[1]
     INPUT_FILTER = sys.argv[2]
@@ -28,16 +26,21 @@ def preprocess_data(db, fs, config):
 
             src_list, tar_list = [], []
 
-            collection = db[DATASET + "_" + config[f"mongoDb{data_type}Collection"]]
+            starting = f"{DATASET}_{data_type}_encoded_"
 
-            cursor = list(collection.find({}))
+            imgs = [
+                file.filename
+                for file in fs.find(
+                    {"filename": {"$regex": f"^{starting}.*"}}
+                )
+            ]
 
-            for index, document in enumerate(tqdm(cursor)):
+            for index, img in enumerate(tqdm(imgs)):
 
-                base64_image_str = document.get("base64_image", "")
-                image_bytes = base64.b64decode(base64_image_str)
-                image_stream = Image.open(io.BytesIO(image_bytes))
-                image = np.array(image_stream)
+                grid_out = fs.find_one({"filename": img})
+                image_bytes = grid_out.read()
+                nparr = np.frombuffer(image_bytes, dtype=np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
                 input_img = ImageClass(image=image)
                 input_img.input_filter(INPUT_FILTER)
@@ -50,8 +53,8 @@ def preprocess_data(db, fs, config):
 
                 if index == 0:
 
-                    plt.imsave("source_example.png", input_img.image, cmap="gray")
-                    plt.imsave("target_example.png", target_img.image, cmap="gray")
+                    plt.imsave("source_example.png", input_img.image)
+                    plt.imsave("target_example.png", target_img.image)
 
             src_images_train = np.stack(src_list)
             tar_images_train = np.stack(tar_list)
@@ -67,8 +70,8 @@ def preprocess_data(db, fs, config):
 def main():
 
     config = load_yaml(yaml_path="config_pipeline.yaml")
-    db, fs = connect_to_mongodb(config=config)
-    preprocess_data(db=db, fs=fs, config=config)
+    _, fs = connect_to_mongodb(config=config)
+    preprocess_data(fs=fs)
 
 
 if __name__ == "__main__":

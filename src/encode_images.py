@@ -1,29 +1,23 @@
 import logging
 import os
 import sys
-
+import cv2
 from tqdm import tqdm
 
 from mongodb_lib import (
     connect_to_mongodb,
-    delete_collection,
-    load_yaml,
-    save_image_to_mongodb,
+    load_yaml
 )
 
 logging.basicConfig(level=logging.INFO)
 
 
-def encode_images(db, config):
+def encode_images(fs):
 
     DATASET = sys.argv[1]
 
     for data_type in ["train", "test"]:
 
-        collection_name = DATASET + "_" + config[f"mongoDb{data_type}Collection"]
-        delete_collection(db=db, collection_name=collection_name)
-
-        collection = db[collection_name]
         images_dir = os.path.join(".", "data", data_type)
         files = list(os.listdir(images_dir))[:5]
 
@@ -32,13 +26,10 @@ def encode_images(db, config):
             if filename.lower().endswith((".jpg", ".jpeg")):
 
                 image_path = os.path.join(images_dir, filename)
-
-                with open(image_path, "rb") as image_file:
-
-                    image_data = image_file.read()
-                    save_image_to_mongodb(
-                        image_data=image_data, filename=filename, collection=collection
-                    )
+                image = cv2.imread(image_path)
+                image_bytes = cv2.imencode('.jpg', image)[1].tobytes()
+                filename = f"{DATASET}_{data_type}_encoded_{filename}"
+                fs.put(image_bytes, filename=filename)
 
         logging.info(
             f"Images in {data_type} encoded and saved to MongoDB successfully."
@@ -48,8 +39,8 @@ def encode_images(db, config):
 def main():
 
     config = load_yaml(yaml_path="config_pipeline.yaml")
-    db, _ = connect_to_mongodb(config=config)
-    encode_images(db=db, config=config)
+    _, fs = connect_to_mongodb(config=config)
+    encode_images(fs=fs)
 
 
 if __name__ == "__main__":

@@ -15,9 +15,9 @@ from tensorflow.keras.layers import (
 )
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-
+from image import ImageClass
 from mongodb_lib import connect_to_mongodb, load_yaml, preprocess_chunks, save_model
-
+import cv2
 
 class Train:
 
@@ -252,9 +252,9 @@ class Train:
                     X_fakeB = self.generator_model.predict(X_realA)
                     X_fakeB = (X_fakeB + 1) / 2.0
                     X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
-
-                    image_bytes = X_fakeB.tobytes()
-                    filename = f"{self.DATASET}_test_image_{ix}_step_{i}_{self.model_name}_evolution"
+                    X_fakeB = ImageClass(image=X_fakeB)
+                    image_bytes = cv2.imencode('.jpg', X_fakeB.image)[1].tobytes()
+                    filename = f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
                     self.fs.put(image_bytes, filename=filename)
 
         save_model(

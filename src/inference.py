@@ -4,8 +4,9 @@ from tensorflow.keras.models import model_from_json
 from tqdm import tqdm
 
 from encode_images import connect_to_mongodb, load_yaml
-from train import preprocess_chunks
-
+from mongodb_lib import preprocess_chunks
+import cv2
+from image import ImageClass
 
 class Inference:
 
@@ -62,10 +63,9 @@ class Inference:
             X_fakeB = (X_fakeB + 1) / 2.0
             X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
 
-            image_bytes = X_fakeB.tobytes()
-            filename = (
-                f"{self.DATASET}_test_image_{ix}_step_1_{self.model_name}_inference"
-            )
+            X_fakeB = ImageClass(image=X_fakeB)
+            image_bytes = cv2.imencode('.jpg', X_fakeB.image)[1].tobytes()
+            filename = f"{self.DATASET}_test_inference_{ix}_step_0_{self.model_name}"
             self.fs.put(image_bytes, filename=filename)
 
 

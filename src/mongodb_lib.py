@@ -45,23 +45,6 @@ def connect_to_mongodb(config):
         raise
 
 
-def delete_collection(db, collection_name):
-
-    collection = db[collection_name]
-    collection.delete_many({})
-
-
-def save_image_to_mongodb(image_data, filename, collection):
-
-    base64_image = base64.b64encode(image_data)
-    base64_image_str = base64_image.decode("utf-8")
-    image_doc = {
-        "filename": filename,
-        "base64_image": base64_image_str,
-    }
-    collection.insert_one(image_doc)
-
-
 def load_data_from_chunks(fs, id_name, db):
 
     file = fs.find_one({"filename": id_name})

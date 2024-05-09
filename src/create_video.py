@@ -47,8 +47,8 @@ class Frames2Videos:
 
     def create_video(self, data_type):
 
-        starting = f"{self.DATASET}_"
-        ending = f"_{self.model_name}_{data_type}_super_resolution"
+        starting = f"{self.DATASET}_test_{data_type}_"
+        ending = ending = f"_{self.model_name}"
 
         imgs = [
             file.filename
@@ -70,15 +70,15 @@ class Frames2Videos:
             (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
         )
 
-        for image in tqdm(imgs):
+        for img in tqdm(imgs):
 
-            file = self.fs.find_one({"filename": image})
-
-            image_bytes = file.read()
+            grid_out = self.fs.find_one({"filename": img})
+            image_bytes = grid_out.read()
             image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+            print(image_array.shape)
             data = image_array.reshape(self.ENHANCED_HEIGHT, self.ENHANCED_WIDTH, 3)
-            data = Image.fromarray(data)
-            data = np.array(data.convert("RGB"))[:, :, ::-1]
+            #data = Image.fromarray(data)
+            #data = np.array(data.convert("RGB"))[:, :, ::-1]
             video_writer.write(data)
 
         video_writer.release()
