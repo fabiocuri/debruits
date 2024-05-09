@@ -1,12 +1,10 @@
 import io
 import sys
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-
+import cv2
 from image import ImageClass
-from mongodb_lib import connect_to_mongodb, load_yaml
+from mongodb_lib import load_yaml, connect_to_mongodb, load_image_from_chunks
 
 
 def preprocess_data(fs):
@@ -37,10 +35,7 @@ def preprocess_data(fs):
 
             for index, img in enumerate(tqdm(imgs)):
 
-                grid_out = fs.find_one({"filename": img})
-                image_bytes = grid_out.read()
-                nparr = np.frombuffer(image_bytes, dtype=np.uint8)
-                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                image = load_image_from_chunks(fs, img)
 
                 input_img = ImageClass(image=image)
                 input_img.input_filter(INPUT_FILTER)
@@ -53,8 +48,8 @@ def preprocess_data(fs):
 
                 if index == 0:
 
-                    plt.imsave("source_example.png", input_img.image)
-                    plt.imsave("target_example.png", target_img.image)
+                    cv2.imwrite("source_example.png", (input_img.image).astype(np.uint8))
+                    cv2.imwrite("target_example.png", (target_img.image).astype(np.uint8))
 
             src_images_train = np.stack(src_list)
             tar_images_train = np.stack(tar_list)

@@ -15,9 +15,8 @@ from tensorflow.keras.layers import (
 )
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-from image import ImageClass
-from mongodb_lib import connect_to_mongodb, load_yaml, preprocess_chunks, save_model
-import cv2
+from mongodb_lib import load_yaml, connect_to_mongodb, preprocess_npz, save_model
+import numpy as np
 
 class Train:
 
@@ -44,16 +43,9 @@ class Train:
 
         self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.train_dataset = preprocess_chunks(
-            fs=self.fs,
-            id_name=f"{self.DATASET}_train_preprocessed_{self.model_name}",
-            db=self.db,
-        )
-        self.test_dataset = preprocess_chunks(
-            fs=self.fs,
-            id_name=f"{self.DATASET}_test_preprocessed_{self.model_name}",
-            db=self.db,
-        )
+        self.train_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_train_preprocessed_{self.model_name}")
+        
+        self.test_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_test_preprocessed_{self.model_name}")
 
         if (
             self.fs.find_one(
@@ -250,10 +242,9 @@ class Train:
 
                     X_realA = testA[[ix]]
                     X_fakeB = self.generator_model.predict(X_realA)
-                    X_fakeB = (X_fakeB + 1) / 2.0
-                    X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
-                    X_fakeB = ImageClass(image=X_fakeB)
-                    image_bytes = cv2.imencode('.jpg', X_fakeB.image)[1].tobytes()
+                    X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
+                    X_fakeB = X_fakeB[0]
+                    image_bytes = X_fakeB.astype(np.uint8).tobytes()
                     filename = f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
                     self.fs.put(image_bytes, filename=filename)
 

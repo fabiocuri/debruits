@@ -1,12 +1,11 @@
 import sys
 
 import cv2
-import numpy as np
-from PIL import Image
 from tqdm import tqdm
 
-from encode_images import connect_to_mongodb, load_yaml
-
+from mongodb_lib import load_yaml, connect_to_mongodb
+import numpy as np
+from PIL import Image
 
 class Frames2Videos:
 
@@ -48,7 +47,7 @@ class Frames2Videos:
     def create_video(self, data_type):
 
         starting = f"{self.DATASET}_test_{data_type}_"
-        ending = ending = f"_{self.model_name}"
+        ending = f"_{self.model_name}"
 
         imgs = [
             file.filename
@@ -72,13 +71,10 @@ class Frames2Videos:
 
         for img in tqdm(imgs):
 
-            grid_out = self.fs.find_one({"filename": img})
-            image_bytes = grid_out.read()
-            image_array = np.frombuffer(image_bytes, dtype=np.uint8)
-            print(image_array.shape)
-            data = image_array.reshape(self.ENHANCED_HEIGHT, self.ENHANCED_WIDTH, 3)
-            #data = Image.fromarray(data)
-            #data = np.array(data.convert("RGB"))[:, :, ::-1]
+            file = self.fs.find_one({"filename": img})
+            image_bytes = file.read()
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            data = nparr.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3).astype(np.uint8)
             video_writer.write(data)
 
         video_writer.release()

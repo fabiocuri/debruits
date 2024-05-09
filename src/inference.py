@@ -1,12 +1,9 @@
 import sys
 
 from tensorflow.keras.models import model_from_json
-from tqdm import tqdm
 
-from encode_images import connect_to_mongodb, load_yaml
-from mongodb_lib import preprocess_chunks
-import cv2
-from image import ImageClass
+from mongodb_lib import load_yaml, connect_to_mongodb, preprocess_npz
+import numpy as np
 
 class Inference:
 
@@ -45,26 +42,19 @@ class Inference:
 
     def infere(self):
 
-        trainA, trainB = preprocess_chunks(
-            fs=self.fs,
-            id_name=f"{self.DATASET}_test_preprocessed_{self.model_name}",
-            db=self.db,
-        )
+        testA, _ = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_test_preprocessed_{self.model_name}")
+
         generator_model = self.load_model_from_chunks(
             id_name=f"{self.DATASET}_generator_model_{self.model_name}", db=self.db
         )
 
-        for ix in tqdm(range(0, trainA.shape[0], 1)):
+        for ix in range(testA.shape[0]):
 
-            X1, _ = trainA[[ix]], trainB[[ix]]
-
-            X_fakeB = generator_model.predict(X1)
-
-            X_fakeB = (X_fakeB + 1) / 2.0
-            X_fakeB = X_fakeB.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3)
-
-            X_fakeB = ImageClass(image=X_fakeB)
-            image_bytes = cv2.imencode('.jpg', X_fakeB.image)[1].tobytes()
+            X_realA = testA[[ix]]
+            X_fakeB = generator_model.predict(X_realA)
+            X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
+            X_fakeB = X_fakeB[0]
+            image_bytes = X_fakeB.astype(np.uint8).tobytes()
             filename = f"{self.DATASET}_test_inference_{ix}_step_0_{self.model_name}"
             self.fs.put(image_bytes, filename=filename)
 

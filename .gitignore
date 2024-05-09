@@ -4,5 +4,4 @@ venv
 data
 data.zip
 *.mp4
-source_example.png
-target_example.png
+*.png

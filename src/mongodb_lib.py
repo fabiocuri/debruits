@@ -1,14 +1,13 @@
 import base64
 import logging
 from io import BytesIO
-
 import numpy as np
 import yaml
 from gridfs import GridFS
 from pymongo import MongoClient
 
 logging.basicConfig(level=logging.INFO)
-
+import cv2
 
 def load_yaml(yaml_path):
 
@@ -44,25 +43,23 @@ def connect_to_mongodb(config):
 
         raise
 
+def load_image_from_chunks(fs, filename):
 
-def load_data_from_chunks(fs, id_name, db):
+    file = fs.find_one({"filename": filename})
+    image_bytes = file.read()
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-    file = fs.find_one({"filename": id_name})
+    return image
+
+def preprocess_npz(fs, db, filename):
+
+    file = fs.find_one({"filename": filename})
     chunks_cursor = db.fs.chunks.find({"files_id": file._id}).sort("n", 1)
     data_chunks = b"".join(chunk["data"] for chunk in chunks_cursor)
     data = np.load(BytesIO(data_chunks))
 
-    return data
-
-
-def preprocess_chunks(fs, id_name, db):
-
-    data = load_data_from_chunks(fs, id_name, db)
-
     X1, X2 = data["arr_0"], data["arr_1"]
-
-    X1 = (X1 - 127.5) / 127.5
-    X2 = (X2 - 127.5) / 127.5
 
     return [X1, X2]
 

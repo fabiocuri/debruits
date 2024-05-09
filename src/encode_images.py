@@ -1,12 +1,11 @@
 import logging
 import os
 import sys
-import cv2
 from tqdm import tqdm
 
 from mongodb_lib import (
-    connect_to_mongodb,
-    load_yaml
+    load_yaml,
+    connect_to_mongodb
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -19,15 +18,18 @@ def encode_images(fs):
     for data_type in ["train", "test"]:
 
         images_dir = os.path.join(".", "data", data_type)
-        files = list(os.listdir(images_dir))[:5]
+        files = list(os.listdir(images_dir))[:30]
 
         for filename in tqdm(files):
 
             if filename.lower().endswith((".jpg", ".jpeg")):
 
                 image_path = os.path.join(images_dir, filename)
-                image = cv2.imread(image_path)
-                image_bytes = cv2.imencode('.jpg', image)[1].tobytes()
+
+                with open(image_path, 'rb') as f:
+
+                    image_bytes = f.read()
+
                 filename = f"{DATASET}_{data_type}_encoded_{filename}"
                 fs.put(image_bytes, filename=filename)
 
