@@ -8,3 +8,4 @@ scipy
 scikit-image
 tensorflow==2.15.0.post1
 gdown
+opencv-python-headless==4.5.3.56
