@@ -18,7 +18,7 @@ def encode_images(fs):
     for data_type in ["train", "test"]:
 
         images_dir = os.path.join(".", "data", data_type)
-        files = list(os.listdir(images_dir))[:30]
+        files = list(os.listdir(images_dir))
 
         for filename in tqdm(files):
 
