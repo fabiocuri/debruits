@@ -30,7 +30,6 @@ pipeline {
       steps {
         container('python') {
           sh 'pip install -r requirements.txt'
-          sh 'apt-get install python3-opencv'
         }
       }
     }
