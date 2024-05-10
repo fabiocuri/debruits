@@ -42,9 +42,11 @@ Configure Jenkins for seamless integration with the project:
      TOKEN is result from `kubectl describe secret $(kubectl describe serviceaccount jenkins | grep token | awk '{print $2}')`.
 5. Create and run a new pipeline pointing to this project.
 6. Install "Stage View" plugin for better visualisation of pipeline.
+```
 
 ## Sendgrid Configuration
 
+```markdown
 1. Create an account in Sendgrid.
 2. Create a SMTP integration.
 3. Create a user in Sendgrid, which will be used to send the e-mails.
@@ -54,3 +56,4 @@ Configure Jenkins for seamless integration with the project:
    - Set "SMTP Port" to 465.
    - Create Sendgrid credentials.
    - Select "Use SSL".
+```
