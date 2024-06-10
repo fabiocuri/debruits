@@ -27,6 +27,12 @@ To set up the project, run the following command in your terminal:
 bash configure.sh
 ```
 
+You can also run the code locally:
+
+```bash
+bash local.sh
+```
+
 ## Jenkins Configuration
 
 ```markdown

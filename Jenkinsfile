@@ -40,11 +40,10 @@ pipeline {
             def DATASET = params.DATASET
             def DATASET_PATH
             if (params.DATASET == 'rego') {
-              DATASET_PATH = '1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
+              sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
             } else if (params.DATASET == 'parque') {
-              DATASET_PATH = '1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY'
+              sh 'gdown --id 1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY'
             }
-          sh "gdown --id $DATASET_PATH"
           sh 'unzip data.zip && rm -rf data.zip'
           }
         }
@@ -64,7 +63,7 @@ pipeline {
             def INPUT_FILTER = params.INPUT_FILTER
             def TARGET_FILTER = params.TARGET_FILTER
             def LEARNING_RATE = params.LEARNING_RATE
-            sh "python src/preprocess.py $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+            sh "python src/preprocess.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
           }
         }
       }
@@ -72,21 +71,21 @@ pipeline {
     stage('model-train') {
       steps {
         container('python') {
-          sh "python src/train.py $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+          sh "python src/train.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }
     stage('model-inference') {
       steps {
         container('python') {
-          sh "python src/inference.py $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+          sh "python src/inference.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }
     stage('create-video') {
       steps {
         container('python') {
-          sh "python src/create_video.py $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+          sh "python src/create_video.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }

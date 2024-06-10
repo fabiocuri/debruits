@@ -12,11 +12,13 @@ from tensorflow.keras.layers import (
     Conv2DTranspose,
     Dropout,
     LeakyReLU,
+    GaussianNoise
 )
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-from mongodb_lib import load_yaml, connect_to_mongodb, preprocess_npz, save_model
+from mongodb_lib import load_yaml, connect_to_mongodb, preprocess_npz, preprocess_npz_local, save_model
 import numpy as np
+import cv2
 
 class Train:
 
@@ -29,10 +31,11 @@ class Train:
 
         self.config = load_yaml(yaml_path="config_pipeline.yaml")
 
-        self.DATASET = sys.argv[1]
-        self.INPUT_FILTER = sys.argv[2]
-        self.TARGET_FILTER = sys.argv[3]
-        self.LEARNING_RATE = sys.argv[4]
+        self.MODE = sys.argv[1]
+        self.DATASET = sys.argv[2]
+        self.INPUT_FILTER = sys.argv[3]
+        self.TARGET_FILTER = sys.argv[4]
+        self.LEARNING_RATE = sys.argv[5]
         self.IMAGE_DIM = self.config["image_config"]["DIM"]
         self.N_EPOCHS = self.config["model_config"]["N_EPOCHS"]
         self.BATCH_SIZE = self.config["model_config"]["BATCH_SIZE"]
@@ -41,23 +44,21 @@ class Train:
             f"{self.INPUT_FILTER}_{self.TARGET_FILTER}_{self.LEARNING_RATE}"
         )
 
-        self.db, self.fs = connect_to_mongodb(config=self.config)
+        if self.MODE == "jenkins":
 
-        self.train_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_train_preprocessed_{self.model_name}")
-        
-        self.test_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_test_preprocessed_{self.model_name}")
+            self.db, self.fs = connect_to_mongodb(config=self.config)
+            self.train_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_train_preprocessed_{self.model_name}")
+            self.test_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_test_preprocessed_{self.model_name}")
 
-        if (
-            self.fs.find_one(
-                {"filename": f"{self.DATASET}_gan_model_{self.model_name}"}
-            )
-            is None
-        ):
+        if self.MODE == "local":
 
-            self.define_discriminator()
-            self.define_generator()
-            self.define_gan()
-            self.train_gan()
+            self.train_dataset = preprocess_npz_local(f"data/{self.DATASET}_train_preprocessed_{self.model_name}.npz")
+            self.test_dataset = preprocess_npz_local(f"data/{self.DATASET}_test_preprocessed_{self.model_name}.npz")
+
+        self.define_discriminator()
+        self.define_generator()
+        self.define_gan()
+        self.train_gan()
 
     def define_discriminator(self):
 
@@ -144,6 +145,8 @@ class Train:
         init = RandomNormal(stddev=0.02)
 
         in_image = Input(shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
+
+        in_image = GaussianNoise(0.4)(in_image) ## adds noise
 
         e1 = self.define_encoder_block(in_image, 64, batchnorm=False)
         e2 = self.define_encoder_block(e1, 128)
@@ -244,25 +247,43 @@ class Train:
                     X_fakeB = self.generator_model.predict(X_realA)
                     X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
                     X_fakeB = X_fakeB[0]
-                    image_bytes = X_fakeB.astype(np.uint8).tobytes()
-                    filename = f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
-                    self.fs.put(image_bytes, filename=filename)
 
-        save_model(
-            fs=self.fs,
-            model_object=self.discriminator_model,
-            model_object_name=f"{self.DATASET}_discriminator_model_{self.model_name}",
-        )
-        save_model(
-            fs=self.fs,
-            model_object=self.generator_model,
-            model_object_name=f"{self.DATASET}_generator_model_{self.model_name}",
-        )
-        save_model(
-            fs=self.fs,
-            model_object=self.gan_model,
-            model_object_name=f"{self.DATASET}_gan_model_{self.model_name}",
-        )
+                    filename = f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
+
+                    if self.MODE == "jenkins":
+
+                        image_bytes = X_fakeB.astype(np.uint8).tobytes()
+                        self.fs.put(image_bytes, filename=filename)
+
+                    if self.MODE == "local":
+
+                        cv2.imwrite(f"data/evolution/{filename}.png", X_fakeB)
+
+        if self.MODE == "jenkins":
+
+            save_model(
+                fs=self.fs,
+                model_object=self.discriminator_model,
+                model_object_name=f"{self.DATASET}_discriminator_model_{self.model_name}",
+            )
+            save_model(
+                fs=self.fs,
+                model_object=self.generator_model,
+                model_object_name=f"{self.DATASET}_generator_model_{self.model_name}",
+            )
+            save_model(
+                fs=self.fs,
+                model_object=self.gan_model,
+                model_object_name=f"{self.DATASET}_gan_model_{self.model_name}",
+            )
+
+        if self.MODE == "local":
+
+            self.discriminator_model.save(f"data/model/{self.DATASET}_discriminator_model_{self.model_name}.h5")
+            self.generator_model.save(f"data/model/{self.DATASET}_generator_model_{self.model_name}.h5")
+            self.gan_model.save(f"data/model/{self.DATASET}_gan_model_{self.model_name}.h5")
+
+
 
 
 if __name__ == "__main__":

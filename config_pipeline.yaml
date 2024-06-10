@@ -4,10 +4,10 @@ mongoDbPort: 27017
 mongoDbDatabase: debruits
 mongoDbtrainCollection: train-raw
 mongoDbtestCollection: test-raw
-clusterNodeId: 172.19.0.2
+clusterNodeId: 172.21.0.2
 mongoDbNodeportPort: 30000
 model_config:
-  N_EPOCHS: 1
+  N_EPOCHS: 5
   BATCH_SIZE: 1
 image_config:
   DIM: 1024
@@ -15,5 +15,5 @@ image_config:
   ENHANCED_WIDTH: 1024
   ENHANCED_HEIGHT: 1024
 video_config:
-  FPS: 2
-timestamp: 20240509_151054
+  FPS: 10
+timestamp: 20240610_212449

@@ -61,6 +61,25 @@ def preprocess_npz(fs, db, filename):
 
     X1, X2 = data["arr_0"], data["arr_1"]
 
+    X1 = (X1 - 127.5) / 127.5
+    X2 = (X2 - 127.5) / 127.5
+
+    X1 = np.clip(X1 * 255, 0, 255).astype(np.uint8)
+    X2 = np.clip(X2 * 255, 0, 255).astype(np.uint8)
+
+    return [X1, X2]
+
+def preprocess_npz_local(filename):
+
+    data = np.load(filename)
+    X1, X2 = data["arr_0"], data["arr_1"]
+
+    X1 = (X1 - 127.5) / 127.5
+    X2 = (X2 - 127.5) / 127.5
+
+    X1 = np.clip(X1 * 255, 0, 255).astype(np.uint8)
+    X2 = np.clip(X2 * 255, 0, 255).astype(np.uint8)
+
     return [X1, X2]
 
 
