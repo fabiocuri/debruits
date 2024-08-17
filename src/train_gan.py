@@ -352,14 +352,14 @@ class Train:
                     X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
                     X_fakeB = X_fakeB[0]
 
-                    # Apply Gaussian Laplace in the end for effects
+                    # Apply effects in the end
 
                     X_fakeB = cv2.resize(
                         X_fakeB, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_LINEAR
                     )
 
                     X_fakeB = laplace(X_fakeB)
-                    X_fakeB = cv2.bilateralFilter(X_fakeB,10,500,500)
+                    X_fakeB = cv2.bilateralFilter(X_fakeB, 7, 300, 300)
                     kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
                     X_fakeB = cv2.filter2D(src=X_fakeB, ddepth=-1, kernel=kernel)
 
