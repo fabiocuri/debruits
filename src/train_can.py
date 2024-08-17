@@ -252,8 +252,8 @@ class Train:
                         image_bytes = X_fakeB.astype(np.uint8).tobytes()
                         self.fs.put(image_bytes, filename=filename)
                     if self.MODE == "local":
-                        os.makedirs("data/evolution", exist_ok=True)
-                        cv2.imwrite(f"data/evolution/{filename}.png", X_fakeB)
+                        os.makedirs("data/evolution_can", exist_ok=True)
+                        cv2.imwrite(f"data/evolution_can/{filename}.png", X_fakeB)
 
         # Save models after training
         if self.MODE == "jenkins":
