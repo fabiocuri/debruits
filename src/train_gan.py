@@ -3,6 +3,7 @@ import sys
 
 import cv2
 import numpy as np
+import cv2 as cv
 from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
@@ -359,6 +360,7 @@ class Train:
                     )
 
                     X_fakeB = laplace(X_fakeB)
+                    X_fakeB = cv.bilateralFilter(X_fakeB,150,100,75)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
