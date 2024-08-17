@@ -253,7 +253,7 @@ class Train:
         # Compile the GAN model with the combined loss function
         self.gan_model.compile(
             loss=["binary_crossentropy", "mae", "mae"],
-            optimizer=Adam(lr=float(self.LEARNING_RATE), beta_1=0.5),
+            optimizer=Adam(learning_rate=float(self.LEARNING_RATE), beta_1=0.5),
             loss_weights=[0.05, 300, 1],  # Emphasize L1 loss more
         )
 
@@ -336,7 +336,7 @@ class Train:
                 )  # Adjust loss weight dynamically
                 self.gan_model.compile(
                     loss=["binary_crossentropy", "mae", "mae"],
-                    optimizer=Adam(lr=0.2 * float(self.LEARNING_RATE), beta_1=0.5),
+                    optimizer=Adam(learning_rate=0.2 * float(self.LEARNING_RATE), beta_1=0.5),
                     loss_weights=[new_weight, 200, 1],  # Update the loss weights
                 )
 
@@ -359,7 +359,9 @@ class Train:
                     )
 
                     X_fakeB = laplace(X_fakeB)
-                    X_fakeB = cv2.bilateralFilter(X_fakeB,5,150,150)
+                    X_fakeB = cv2.bilateralFilter(X_fakeB,10,500,500)
+                    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+                    X_fakeB = cv2.filter2D(src=X_fakeB, ddepth=-1, kernel=kernel)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
