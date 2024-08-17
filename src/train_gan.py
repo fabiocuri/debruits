@@ -360,7 +360,7 @@ class Train:
                     )
 
                     X_fakeB = laplace(X_fakeB)
-                    X_fakeB = cv.bilateralFilter(X_fakeB,150,100,75)
+                    X_fakeB = cv.bilateralFilter(X_fakeB,5,150,150)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
