@@ -14,7 +14,6 @@ from tensorflow.keras.layers import (
     Conv2D,
     Conv2DTranspose,
     Dropout,
-    GaussianNoise,
     LeakyReLU,
 )
 from tensorflow.keras.optimizers import Adam
@@ -126,7 +125,7 @@ class Train:
         self.discriminator_model = Model([in_src_image, in_target_image], patch_out)
         self.discriminator_model.compile(
             loss="binary_crossentropy",
-            optimizer=Adam(learning_rate=float(self.LEARNING_RATE), beta_1=0.5),
+            optimizer=Adam(learning_rate=100*float(self.LEARNING_RATE), beta_1=0.5),
             loss_weights=[0.5],
         )
 
@@ -137,8 +136,6 @@ class Train:
         g = Conv2D(
             n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(layer_in)
-
-        g = GaussianNoise(100)(g)  ## adds noise
 
         if batchnorm:
             g = InstanceNormalization()(g, training=True)
@@ -157,10 +154,9 @@ class Train:
         g = InstanceNormalization()(g, training=True)
 
         if dropout:
-            g = Dropout(0.7)(g, training=True)
+            g = Dropout(0.2)(g, training=True)
 
         g = Concatenate()([g, skip_in])
-        g = Dropout(0.5)(g)  ## adds noise
         g = Activation("relu")(g)
 
         return g
@@ -170,7 +166,6 @@ class Train:
         init = RandomNormal(stddev=0.02)
 
         in_image = Input(shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
-        in_image = GaussianNoise(200)(in_image)  ## adds noise
 
         e1 = self.define_encoder_block(in_image, 64, batchnorm=False)
         e2 = self.define_encoder_block(e1, 128)
@@ -198,7 +193,6 @@ class Train:
         )(d7)
 
         out_image = Activation("tanh")(g)
-        out_image = Dropout(0.5)(out_image)  ## adds noise
 
         self.generator_model = Model(in_image, out_image)
 
@@ -279,10 +273,11 @@ class Train:
             )
 
             _ = self.discriminator_model.train_on_batch([X_realA, X_realB], y_real)
-
             _ = self.discriminator_model.train_on_batch([X_realA, X_fakeB], y_fake)
 
-            _, _, _ = self.gan_model.train_on_batch(X_realA, [y_real, X_realB])
+            vgg_real_features = self.feature_extractor.predict(X_realB)
+
+            _ = self.gan_model.train_on_batch(X_realA, [y_real, X_realB, vgg_real_features])
 
             if (i + 1) % 1 == 0:
 
