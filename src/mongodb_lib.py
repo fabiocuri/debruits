@@ -1,6 +1,7 @@
 import base64
 import logging
 from io import BytesIO
+
 import numpy as np
 import yaml
 from gridfs import GridFS
@@ -8,6 +9,7 @@ from pymongo import MongoClient
 
 logging.basicConfig(level=logging.INFO)
 import cv2
+
 
 def load_yaml(yaml_path):
 
@@ -43,6 +45,7 @@ def connect_to_mongodb(config):
 
         raise
 
+
 def load_image_from_chunks(fs, filename):
 
     file = fs.find_one({"filename": filename})
@@ -51,6 +54,7 @@ def load_image_from_chunks(fs, filename):
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     return image
+
 
 def preprocess_npz(fs, db, filename):
 
@@ -68,6 +72,7 @@ def preprocess_npz(fs, db, filename):
     X2 = np.clip(X2 * 255, 0, 255).astype(np.uint8)
 
     return [X1, X2]
+
 
 def preprocess_npz_local(filename):
 

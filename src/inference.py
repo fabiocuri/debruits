@@ -1,10 +1,16 @@
 import sys
 
-from tensorflow.keras.models import model_from_json, load_model
-
-from mongodb_lib import load_yaml, connect_to_mongodb, preprocess_npz, preprocess_npz_local
-import numpy as np
 import cv2
+import numpy as np
+from tensorflow.keras.models import load_model, model_from_json
+
+from mongodb_lib import (
+    connect_to_mongodb,
+    load_yaml,
+    preprocess_npz,
+    preprocess_npz_local,
+)
+
 
 class Inference:
 
@@ -31,13 +37,23 @@ class Inference:
         if self.MODE == "jenkins":
 
             self.db, self.fs = connect_to_mongodb(config=self.config)
-            self.testA, _ = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_test_preprocessed_{self.model_name}")
-            self.generator_model = self.load_model_from_chunks(id_name=f"{self.DATASET}_generator_model_{self.model_name}", db=self.db)
+            self.testA, _ = preprocess_npz(
+                fs=self.fs,
+                db=self.db,
+                filename=f"{self.DATASET}_test_preprocessed_{self.model_name}",
+            )
+            self.generator_model = self.load_model_from_chunks(
+                id_name=f"{self.DATASET}_generator_model_{self.model_name}", db=self.db
+            )
 
         if self.MODE == "local":
 
-            self.testA, _ = preprocess_npz_local(f"data/{self.DATASET}_test_preprocessed_{self.model_name}.npz")
-            self.generator_model = load_model(f"data/model/{self.DATASET}_generator_model_{self.model_name}.h5")
+            self.testA, _ = preprocess_npz_local(
+                f"data/{self.DATASET}_test_preprocessed_{self.model_name}.npz"
+            )
+            self.generator_model = load_model(
+                f"data/model/{self.DATASET}_generator_model_{self.model_name}.h5"
+            )
 
         self.infere()
 

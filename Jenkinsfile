@@ -38,11 +38,14 @@ pipeline {
         container('python') {
           script {
             def DATASET = params.DATASET
-            def DATASET_PATH
+            def INPUT_FILTER = params.INPUT_FILTER
+            def TARGET_FILTER = params.TARGET_FILTER
+            def LEARNING_RATE = params.LEARNING_RATE
+            
             if (params.DATASET == 'rego') {
               sh 'gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD'
-            } else if (params.DATASET == 'parque') {
-              sh 'gdown --id 1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY'
+            } else if (params.DATASET == 'art') {
+              sh 'gdown --id 1p_3PegnUsINvobi6pUF46rwVOEGc_LpC'
             }
           sh 'unzip data.zip && rm -rf data.zip'
           }
@@ -60,9 +63,6 @@ pipeline {
       steps {
         container('python') {
           script {
-            def INPUT_FILTER = params.INPUT_FILTER
-            def TARGET_FILTER = params.TARGET_FILTER
-            def LEARNING_RATE = params.LEARNING_RATE
             sh "python src/preprocess.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
           }
         }

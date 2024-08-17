@@ -1,11 +1,12 @@
+import os
 import sys
 
 import cv2
+import numpy as np
 from tqdm import tqdm
 
-from mongodb_lib import load_yaml, connect_to_mongodb
-import numpy as np
-import os
+from mongodb_lib import connect_to_mongodb, load_yaml
+
 
 class Frames2Videos:
 

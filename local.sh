@@ -7,7 +7,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 echo "Select dataset:"
-select DATASET in "rego" "parque"; do
+select DATASET in "rego" "art"; do
     break
 done
 
@@ -30,8 +30,8 @@ rm -rf data
 
 if [ "$DATASET" == "rego" ]; then
     gdown --id 1BPJQ1pRoCnUxYWP65Xklufgtl85kg1dD
-elif [ "$DATASET" == "parque" ]; then
-    gdown --id 1NqL8zJGZO7FrBKe7NKlY1YLBsxUJdSGY
+elif [ "$DATASET" == "art" ]; then
+    gdown --id 1p_3PegnUsINvobi6pUF46rwVOEGc_LpC
 fi
 unzip data.zip && rm -rf data.zip
 

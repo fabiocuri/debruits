@@ -1,5 +1,8 @@
+import os
 import sys
 
+import cv2
+import numpy as np
 from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
@@ -11,14 +14,20 @@ from tensorflow.keras.layers import (
     Conv2D,
     Conv2DTranspose,
     Dropout,
+    GaussianNoise,
     LeakyReLU,
-    GaussianNoise
 )
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-from mongodb_lib import load_yaml, connect_to_mongodb, preprocess_npz, preprocess_npz_local, save_model
-import numpy as np
-import cv2
+
+from mongodb_lib import (
+    connect_to_mongodb,
+    load_yaml,
+    preprocess_npz,
+    preprocess_npz_local,
+    save_model,
+)
+
 
 class Train:
 
@@ -47,13 +56,25 @@ class Train:
         if self.MODE == "jenkins":
 
             self.db, self.fs = connect_to_mongodb(config=self.config)
-            self.train_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_train_preprocessed_{self.model_name}")
-            self.test_dataset = preprocess_npz(fs=self.fs, db=self.db, filename=f"{self.DATASET}_test_preprocessed_{self.model_name}")
+            self.train_dataset = preprocess_npz(
+                fs=self.fs,
+                db=self.db,
+                filename=f"{self.DATASET}_train_preprocessed_{self.model_name}",
+            )
+            self.test_dataset = preprocess_npz(
+                fs=self.fs,
+                db=self.db,
+                filename=f"{self.DATASET}_test_preprocessed_{self.model_name}",
+            )
 
         if self.MODE == "local":
 
-            self.train_dataset = preprocess_npz_local(f"data/{self.DATASET}_train_preprocessed_{self.model_name}.npz")
-            self.test_dataset = preprocess_npz_local(f"data/{self.DATASET}_test_preprocessed_{self.model_name}.npz")
+            self.train_dataset = preprocess_npz_local(
+                f"data/{self.DATASET}_train_preprocessed_{self.model_name}.npz"
+            )
+            self.test_dataset = preprocess_npz_local(
+                f"data/{self.DATASET}_test_preprocessed_{self.model_name}.npz"
+            )
 
         self.define_discriminator()
         self.define_generator()
@@ -146,7 +167,7 @@ class Train:
 
         in_image = Input(shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
 
-        in_image = GaussianNoise(0.4)(in_image) ## adds noise
+        in_image = GaussianNoise(0.4)(in_image)  ## adds noise
 
         e1 = self.define_encoder_block(in_image, 64, batchnorm=False)
         e2 = self.define_encoder_block(e1, 128)
@@ -248,7 +269,9 @@ class Train:
                     X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
                     X_fakeB = X_fakeB[0]
 
-                    filename = f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
+                    filename = (
+                        f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
+                    )
 
                     if self.MODE == "jenkins":
 
@@ -257,6 +280,7 @@ class Train:
 
                     if self.MODE == "local":
 
+                        os.makedirs("data/evolution", exist_ok=True)
                         cv2.imwrite(f"data/evolution/{filename}.png", X_fakeB)
 
         if self.MODE == "jenkins":
@@ -279,11 +303,16 @@ class Train:
 
         if self.MODE == "local":
 
-            self.discriminator_model.save(f"data/model/{self.DATASET}_discriminator_model_{self.model_name}.h5")
-            self.generator_model.save(f"data/model/{self.DATASET}_generator_model_{self.model_name}.h5")
-            self.gan_model.save(f"data/model/{self.DATASET}_gan_model_{self.model_name}.h5")
-
-
+            os.makedirs("data/model", exist_ok=True)
+            self.discriminator_model.save(
+                f"data/model/{self.DATASET}_discriminator_model_{self.model_name}.h5"
+            )
+            self.generator_model.save(
+                f"data/model/{self.DATASET}_generator_model_{self.model_name}.h5"
+            )
+            self.gan_model.save(
+                f"data/model/{self.DATASET}_gan_model_{self.model_name}.h5"
+            )
 
 
 if __name__ == "__main__":

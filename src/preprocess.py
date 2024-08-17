@@ -1,11 +1,14 @@
 import io
+import os
 import sys
+
+import cv2
 import numpy as np
 from tqdm import tqdm
-import cv2
+
 from image import ImageClass
-from mongodb_lib import load_yaml, connect_to_mongodb, load_image_from_chunks
-import os
+from mongodb_lib import connect_to_mongodb, load_image_from_chunks, load_yaml
+
 
 def preprocess_data():
 
@@ -32,9 +35,7 @@ def preprocess_data():
 
             imgs = [
                 file.filename
-                for file in fs.find(
-                    {"filename": {"$regex": f"^{starting}.*"}}
-                )
+                for file in fs.find({"filename": {"$regex": f"^{starting}.*"}})
             ]
 
             for index, img in enumerate(tqdm(imgs)):
@@ -52,8 +53,12 @@ def preprocess_data():
 
                 if index == 0:
 
-                    cv2.imwrite("source_example.png", (input_img.image).astype(np.uint8))
-                    cv2.imwrite("target_example.png", (target_img.image).astype(np.uint8))
+                    cv2.imwrite(
+                        "source_example.png", (input_img.image).astype(np.uint8)
+                    )
+                    cv2.imwrite(
+                        "target_example.png", (target_img.image).astype(np.uint8)
+                    )
 
             src_images_train = np.stack(src_list)
             tar_images_train = np.stack(tar_list)
@@ -92,8 +97,12 @@ def preprocess_data():
 
                 if index == 0:
 
-                    cv2.imwrite("source_example.png", (input_img.image).astype(np.uint8))
-                    cv2.imwrite("target_example.png", (target_img.image).astype(np.uint8))
+                    cv2.imwrite(
+                        "source_example.png", (input_img.image).astype(np.uint8)
+                    )
+                    cv2.imwrite(
+                        "target_example.png", (target_img.image).astype(np.uint8)
+                    )
 
             src_images_train = np.stack(src_list)
             tar_images_train = np.stack(tar_list)

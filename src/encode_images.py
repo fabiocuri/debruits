@@ -1,12 +1,10 @@
 import logging
 import os
 import sys
+
 from tqdm import tqdm
 
-from mongodb_lib import (
-    load_yaml,
-    connect_to_mongodb
-)
+from mongodb_lib import connect_to_mongodb, load_yaml
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +24,7 @@ def encode_images(fs):
 
                 image_path = os.path.join(images_dir, filename)
 
-                with open(image_path, 'rb') as f:
+                with open(image_path, "rb") as f:
 
                     image_bytes = f.read()
 
