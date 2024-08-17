@@ -258,7 +258,7 @@ class Train:
 
             _, _, _ = self.gan_model.train_on_batch(X_realA, [y_real, X_realB])
 
-            if (i + 1) % 5 == 0:
+            if (i + 1) % 50 == 0:
 
                 testA, _ = self.test_dataset
 
