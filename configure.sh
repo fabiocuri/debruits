@@ -41,13 +41,13 @@ kubectl create rolebinding jenkins-admin-binding --clusterrole=admin --serviceac
 
 echo "----------------------------INSTALLING MONGODB-------------------------------"
 echo "--------------------------https://localhost:27017----------------------------"
-echo "----------------------http://${CLUSTER_NODE_ID}:27017------------------------"
 kubectl apply -f kubernetes/debruits-configmap.yaml
 kubectl apply -f kubernetes/debruits-secret.yaml
 kubectl apply -f kubernetes/mongodb.yaml
 sleep 20
 export CLUSTER_NODE_ID=$(kubectl get node -o wide | awk 'NR==2 {print $6}')
 export TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+echo "----------------------http://${CLUSTER_NODE_ID}:27017------------------------"
 envsubst < config.yaml > config_pipeline.yaml
 git add .
 git commit -m "new config"
