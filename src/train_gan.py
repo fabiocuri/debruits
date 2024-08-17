@@ -330,18 +330,18 @@ class Train:
             )
 
             # Dynamic adjustment of loss weights
-            if (i + 1) % 1000 == 0:  # Adjust every 1000 steps
+            if (i + 1) % 10 == 0:  # Adjust every 1000 steps
                 new_weight = max(
                     0.05, 0.1 - i / n_steps * 0.1
                 )  # Adjust loss weight dynamically
                 self.gan_model.compile(
                     loss=["binary_crossentropy", "mae", "mae"],
-                    optimizer=Adam(lr=0.5 * float(self.LEARNING_RATE), beta_1=0.5),
+                    optimizer=Adam(lr=0.2 * float(self.LEARNING_RATE), beta_1=0.5),
                     loss_weights=[new_weight, 200, 1],  # Update the loss weights
                 )
 
             # Save model and generate samples at specified intervals
-            if (i + 1) % 1000 == 0:
+            if (i + 1) % 1 == 0:
                 testA, _ = self.test_dataset
                 for ix in range(testA.shape[0]):
                     X_realA = testA[[ix]]
