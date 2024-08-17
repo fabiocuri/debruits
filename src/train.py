@@ -7,9 +7,9 @@ from numpy import ones, zeros
 from numpy.random import randint
 from tensorflow.keras import Input, Model
 from tensorflow.keras.initializers import RandomNormal
+from tensorflow_addons.layers import InstanceNormalization
 from tensorflow.keras.layers import (
     Activation,
-    BatchNormalization,
     Concatenate,
     Conv2D,
     Conv2DTranspose,
@@ -19,6 +19,7 @@ from tensorflow.keras.layers import (
 )
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
+from tensorflow.keras.applications import VGG16
 
 from mongodb_lib import (
     connect_to_mongodb,
@@ -100,23 +101,23 @@ class Train:
         d = Conv2D(
             128, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(d)
-        d = BatchNormalization()(d)
+        d = InstanceNormalization()(d)
         d = LeakyReLU(alpha=0.2)(d)
 
         d = Conv2D(
             256, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(d)
-        d = BatchNormalization()(d)
+        d = InstanceNormalization()(d)
         d = LeakyReLU(alpha=0.2)(d)
 
         d = Conv2D(
             512, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(d)
-        d = BatchNormalization()(d)
+        d = InstanceNormalization()(d)
         d = LeakyReLU(alpha=0.2)(d)
 
         d = Conv2D(512, (4, 4), padding="same", kernel_initializer=init)(d)
-        d = BatchNormalization()(d)
+        d = InstanceNormalization()(d)
         d = LeakyReLU(alpha=0.2)(d)
 
         d = Conv2D(1, (4, 4), padding="same", kernel_initializer=init)(d)
@@ -137,8 +138,10 @@ class Train:
             n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(layer_in)
 
+        g = GaussianNoise(100)(g)  ## adds noise
+
         if batchnorm:
-            g = BatchNormalization()(g, training=True)
+            g = InstanceNormalization()(g, training=True)
 
         g = LeakyReLU(alpha=0.2)(g)
 
@@ -151,12 +154,13 @@ class Train:
         g = Conv2DTranspose(
             n_filters, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(layer_in)
-        g = BatchNormalization()(g, training=True)
+        g = InstanceNormalization()(g, training=True)
 
         if dropout:
             g = Dropout(0.7)(g, training=True)
 
         g = Concatenate()([g, skip_in])
+        g = Dropout(0.5)(g)  ## adds noise
         g = Activation("relu")(g)
 
         return g
@@ -166,7 +170,7 @@ class Train:
         init = RandomNormal(stddev=0.02)
 
         in_image = Input(shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
-        in_image = GaussianNoise(100)(in_image)  ## adds noise
+        in_image = GaussianNoise(200)(in_image)  ## adds noise
 
         e1 = self.define_encoder_block(in_image, 64, batchnorm=False)
         e2 = self.define_encoder_block(e1, 128)
@@ -194,25 +198,46 @@ class Train:
         )(d7)
 
         out_image = Activation("tanh")(g)
+        out_image = Dropout(0.5)(out_image)  ## adds noise
 
         self.generator_model = Model(in_image, out_image)
 
     def define_gan(self):
 
+        # Ensure the discriminator is not trainable when training the GAN
         self.discriminator_model.trainable = False
 
+        # Input for the source image
         in_src = Input(shape=self.train_dataset[0].shape[1:])
 
+        # Generate the output image using the generator
         gen_out = self.generator_model(in_src)
 
+        # Discriminator's output for the real vs generated images
         dis_out = self.discriminator_model([in_src, gen_out])
 
-        self.gan_model = Model(in_src, [dis_out, gen_out])
+        # Feature extractor using pre-trained VGG16
+        def define_feature_extractor():
+            vgg = VGG16(include_top=False, input_shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
+            vgg.trainable = False
+            return Model(inputs=vgg.inputs, outputs=vgg.layers[9].output)
 
+        # Initialize the feature extractor
+        self.feature_extractor = define_feature_extractor()
+
+        # Extract features from both real and generated images
+        real_features = self.feature_extractor(in_src)
+        gen_features = self.feature_extractor(gen_out)
+
+        # Define the GAN model that takes in the source image and outputs discriminator's decision,
+        # the generated image, and the feature difference between real and generated images
+        self.gan_model = Model(in_src, [dis_out, gen_out, gen_features])
+
+        # Compile the GAN model with the combined loss function
         self.gan_model.compile(
-            loss=["binary_crossentropy", "mae"],
+            loss=["binary_crossentropy", "mae", "mae"],
             optimizer=Adam(lr=float(self.LEARNING_RATE), beta_1=0.5),
-            loss_weights=[1, 200],  # Adjust loss weights to influence diversity
+            loss_weights=[0.1, 200, 1],  # Weights for discriminator loss, generator's L1 loss, and feature loss
         )
 
     def generate_real_samples(self, dataset, n_samples, patch_shape):
