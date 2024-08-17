@@ -10,7 +10,7 @@ model_config:
   N_EPOCHS: 1
   BATCH_SIZE: 1
 image_config:
-  DIM: 512
+  DIM: 1024
   BLUR: 30
   ENHANCED_WIDTH: 1024
   ENHANCED_HEIGHT: 1024

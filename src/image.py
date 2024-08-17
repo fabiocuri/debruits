@@ -39,7 +39,7 @@ class ImageClass:
 
             n_segments = int(FILTER.split("-")[1])
 
-            self.image_slic = slic(self.image, n_segments=n_segments, compactness=5)
+            self.image_slic = slic(self.image, n_segments=n_segments, compactness=1)
             self.image = label2rgb(self.image_slic, self.image, kind="avg")
 
         if FILTER == "solarize":
@@ -69,6 +69,22 @@ class ImageClass:
 
             kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
             self.image = cv2.filter2D(src=self.image, ddepth=-1, kernel=kernel)
+
+        if FILTER == "special-input":
+
+            self.image_slic = slic(self.image, n_segments=300, compactness=1)
+            self.image = label2rgb(self.image_slic, self.image, kind="avg")
+
+            self.image = laplace(self.image)
+            self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
+
+        if FILTER == "special-target":
+
+            self.image_slic = slic(self.image, n_segments=20, compactness=1)
+            self.image = label2rgb(self.image_slic, self.image, kind="avg")
+
+            self.image = laplace(self.image)
+            self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
 
     def input_filter(self, INPUT_FILTER):
 
