@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 
 import cv2
 import yaml
@@ -14,15 +15,14 @@ class SplitVideo:
 
     def __init__(self):
 
-        self.config = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
+        self.config = yaml.load(open("config_pipeline.yaml"), Loader=yaml.FullLoader)
 
-        self.VIDEO_PATH = self.config["system_config"]["VIDEO_PATH"]
-        self.FPS = self.config["video_config"]["FPS"]
+        self.VIDEO_PATH = sys.argv[1]
 
-        self.folder_path = os.path.dirname(self.VIDEO_PATH)
-        self.output_path = f"{self.folder_path}/frames"
+        self.FPS = int(self.config["video_config"]["FPS"])
 
-        Path(self.output_path).mkdir(parents=True, exist_ok=True)
+        self.output_path = "frames"
+        os.makedirs(self.output_path, exist_ok=True)
 
         self.extract_frames()
 
@@ -33,7 +33,9 @@ class SplitVideo:
         frame_interval = int(frames_per_second / self.FPS)
 
         frame_count = 0
+
         while True:
+
             ret, frame = video_capture.read()
 
             if not ret:

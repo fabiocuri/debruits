@@ -4,4 +4,6 @@ venv
 data
 data.zip
 *.mp4
+*.MOV
 *.png
+frames

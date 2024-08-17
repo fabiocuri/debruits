@@ -10,10 +10,10 @@ model_config:
   N_EPOCHS: 5
   BATCH_SIZE: 1
 image_config:
-  DIM: 1024
-  BLUR: 20
+  DIM: 512
+  BLUR: 30
   ENHANCED_WIDTH: 1024
   ENHANCED_HEIGHT: 1024
 video_config:
-  FPS: 10
+  FPS: 5
 timestamp: 20240817_115644

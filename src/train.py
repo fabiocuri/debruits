@@ -154,7 +154,7 @@ class Train:
         g = BatchNormalization()(g, training=True)
 
         if dropout:
-            g = Dropout(0.5)(g, training=True)
+            g = Dropout(0.7)(g, training=True)
 
         g = Concatenate()([g, skip_in])
         g = Activation("relu")(g)
@@ -166,8 +166,7 @@ class Train:
         init = RandomNormal(stddev=0.02)
 
         in_image = Input(shape=(self.IMAGE_DIM, self.IMAGE_DIM, 3))
-
-        in_image = GaussianNoise(0.4)(in_image)  ## adds noise
+        in_image = GaussianNoise(100)(in_image)  ## adds noise
 
         e1 = self.define_encoder_block(in_image, 64, batchnorm=False)
         e2 = self.define_encoder_block(e1, 128)
@@ -185,14 +184,15 @@ class Train:
         d1 = self.decoder_block(b, e7, 512)
         d2 = self.decoder_block(d1, e6, 512)
         d3 = self.decoder_block(d2, e5, 512)
-        d4 = self.decoder_block(d3, e4, 512, dropout=False)
-        d5 = self.decoder_block(d4, e3, 256, dropout=False)
-        d6 = self.decoder_block(d5, e2, 128, dropout=False)
-        d7 = self.decoder_block(d6, e1, 64, dropout=False)
+        d4 = self.decoder_block(d3, e4, 512)
+        d5 = self.decoder_block(d4, e3, 256)
+        d6 = self.decoder_block(d5, e2, 128)
+        d7 = self.decoder_block(d6, e1, 64)
 
         g = Conv2DTranspose(
             3, (4, 4), strides=(2, 2), padding="same", kernel_initializer=init
         )(d7)
+
         out_image = Activation("tanh")(g)
 
         self.generator_model = Model(in_image, out_image)
@@ -208,10 +208,11 @@ class Train:
         dis_out = self.discriminator_model([in_src, gen_out])
 
         self.gan_model = Model(in_src, [dis_out, gen_out])
+
         self.gan_model.compile(
             loss=["binary_crossentropy", "mae"],
             optimizer=Adam(lr=float(self.LEARNING_RATE), beta_1=0.5),
-            loss_weights=[1, 100],
+            loss_weights=[1, 200],  # Adjust loss weights to influence diversity
         )
 
     def generate_real_samples(self, dataset, n_samples, patch_shape):
@@ -258,7 +259,7 @@ class Train:
 
             _, _, _ = self.gan_model.train_on_batch(X_realA, [y_real, X_realB])
 
-            if (i + 1) % 50 == 0:
+            if (i + 1) % 10 == 0:
 
                 testA, _ = self.test_dataset
 
