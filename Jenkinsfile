@@ -71,7 +71,7 @@ pipeline {
     stage('model-train') {
       steps {
         container('python') {
-          sh "python src/train_can.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+          sh "python src/train_gan.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }

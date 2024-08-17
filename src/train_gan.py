@@ -29,7 +29,7 @@ from mongodb_lib import (
     preprocess_npz_local,
     save_model,
 )
-
+from scipy.ndimage import laplace
 
 class Train:
 
@@ -128,7 +128,7 @@ class Train:
         self.discriminator_model = Model([in_src_image, in_target_image], patch_out)
         self.discriminator_model.compile(
             loss="binary_crossentropy",
-            optimizer=Adam(learning_rate=10 * float(self.LEARNING_RATE), beta_1=0.5),
+            optimizer=Adam(learning_rate=float(self.LEARNING_RATE), beta_1=0.5),
             loss_weights=[0.5],
         )
 
@@ -253,7 +253,7 @@ class Train:
         # Compile the GAN model with the combined loss function
         self.gan_model.compile(
             loss=["binary_crossentropy", "mae", "mae"],
-            optimizer=Adam(lr=0.2 * float(self.LEARNING_RATE), beta_1=0.5),
+            optimizer=Adam(lr=float(self.LEARNING_RATE), beta_1=0.5),
             loss_weights=[0.05, 300, 1],  # Emphasize L1 loss more
         )
 
@@ -351,6 +351,14 @@ class Train:
                     X_fakeB = self.generator_model.predict([X_realA, noise])
                     X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
                     X_fakeB = X_fakeB[0]
+
+                    # Apply Gaussian Laplace in the end for effects
+
+                    X_fakeB = cv2.resize(
+                        X_fakeB, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_LINEAR
+                    )
+
+                    X_fakeB = laplace(X_fakeB)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"

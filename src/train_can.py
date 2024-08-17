@@ -26,7 +26,7 @@ from mongodb_lib import (
     preprocess_npz_local,
     save_model,
 )
-
+from scipy.ndimage import laplace
 
 class Train:
 
@@ -78,7 +78,7 @@ class Train:
         self.define_encoder()
         self.define_decoder()
         self.define_feature_extractor()
-        self.define_can()  # Ensure this method is called
+        self.define_can()
         self.train_can()
 
     def define_encoder(self):
@@ -244,6 +244,14 @@ class Train:
                     X_fakeB = self.can_model.predict(X_realA)
                     X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
                     X_fakeB = X_fakeB[0]
+
+                    # Apply Gaussian Laplace in the end for effects
+
+                    X_fakeB = cv2.resize(
+                        X_fakeB, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_LINEAR
+                    )
+
+                    X_fakeB = laplace(X_fakeB)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
