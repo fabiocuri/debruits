@@ -7,7 +7,7 @@ mongoDbtestCollection: test-raw
 clusterNodeId: 172.21.0.2
 mongoDbNodeportPort: 30000
 model_config:
-  N_EPOCHS: 1
+  N_EPOCHS: 5
   BATCH_SIZE: 1
 image_config:
   DIM: 1024
