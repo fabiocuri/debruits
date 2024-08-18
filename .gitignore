@@ -8,6 +8,3 @@ data.zip
 *.png
 frames
 venv_superresolution
-weights/rdn-C6-D20-G64-G064-x2_ArtefactCancelling_epoch219.hdf5
-weights/rdn-C6-D20-G64-G064-x2_PSNR_epoch086.hdf5
-weights/rrdn-C4-D3-G32-G032-T10-x4_epoch299.hdf5
