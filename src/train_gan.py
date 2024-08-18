@@ -22,6 +22,9 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow_addons.layers import InstanceNormalization
 from tqdm import tqdm
+from tensorflow.keras import backend as K
+
+K.clear_session()
 
 from mongodb_lib import (
     connect_to_mongodb,
@@ -366,7 +369,7 @@ class Train:
 
                     # Apply effects in the end
 
-                    # X_fakeB = laplace(X_fakeB)
+                    X_fakeB = laplace(X_fakeB)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"

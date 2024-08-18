@@ -37,6 +37,14 @@ class SuperResolution:
             data = Image.open(f"{self.IMAGES_FOLDER}/{img}")
             data = np.array(data)
 
+            data = cv2.GaussianBlur(data, (50, 50), 0)
+
+            data = cv2.cvtColor(data, cv2.COLOR_BGR2YCrCb)
+            channels = cv2.split(data)
+            cv2.equalizeHist(channels[0], channels[0])
+            data = cv2.merge(channels)
+            data = cv2.cvtColor(data, cv2.COLOR_YCrCb2BGR)
+
             data = cv2.resize(
                 data,
                 (self.IMAGE_DIM, self.IMAGE_DIM),
