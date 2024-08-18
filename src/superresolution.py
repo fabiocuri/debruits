@@ -40,9 +40,6 @@ class SuperResolution:
 
             data = gaussian_filter(data, sigma=0.9)
 
-            kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-            data = cv2.filter2D(src=data, ddepth=-1, kernel=kernel)
-
             data = cv2.resize(
                 data,
                 (self.IMAGE_DIM, self.IMAGE_DIM),
