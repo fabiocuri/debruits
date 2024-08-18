@@ -367,9 +367,9 @@ class Train:
                         interpolation=cv2.INTER_LINEAR,
                     )
 
-                    # Apply effects in the end
+                    # Apply Laplace not to make outputs become white
 
-                    X_fakeB = laplace(X_fakeB)
+                    X_fakeB = laplace(input=X_fakeB)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"
