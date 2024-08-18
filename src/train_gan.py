@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from numpy import ones, zeros
 from numpy.random import randint
+from scipy.ndimage import laplace
 from tensorflow.keras import Input, Model
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.initializers import RandomNormal
@@ -29,7 +30,7 @@ from mongodb_lib import (
     preprocess_npz_local,
     save_model,
 )
-from scipy.ndimage import laplace
+
 
 class Train:
 
@@ -336,7 +337,9 @@ class Train:
                 )  # Adjust loss weight dynamically
                 self.gan_model.compile(
                     loss=["binary_crossentropy", "mae", "mae"],
-                    optimizer=Adam(learning_rate=0.2 * float(self.LEARNING_RATE), beta_1=0.5),
+                    optimizer=Adam(
+                        learning_rate=0.2 * float(self.LEARNING_RATE), beta_1=0.5
+                    ),
                     loss_weights=[new_weight, 200, 1],  # Update the loss weights
                 )
 
@@ -358,13 +361,13 @@ class Train:
                     # Apply effects in the end
 
                     X_fakeB = cv2.resize(
-                        X_fakeB, (self.IMAGE_DIM, self.IMAGE_DIM), interpolation=cv2.INTER_LINEAR
+                        X_fakeB,
+                        (self.IMAGE_DIM, self.IMAGE_DIM),
+                        interpolation=cv2.INTER_LINEAR,
                     )
 
                     X_fakeB = laplace(X_fakeB)
-                    X_fakeB = cv2.bilateralFilter(X_fakeB, 10, 500, 500)
-                    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-                    X_fakeB = cv2.filter2D(src=X_fakeB, ddepth=-1, kernel=kernel)
+                    X_fakeB = cv2.bilateralFilter(X_fakeB, 5, 50, 50)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"

@@ -85,7 +85,7 @@ pipeline {
     stage('create-video') {
       steps {
         container('python') {
-          sh "python src/create_video.py jenkins $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
+          sh "python src/create_video.py jenkins data/sequence_borosylicate $DATASET $INPUT_FILTER $TARGET_FILTER $LEARNING_RATE"
         }
       }
     }

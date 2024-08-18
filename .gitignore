@@ -7,3 +7,5 @@ data.zip
 *.MOV
 *.png
 frames
+venv_superresolution
+weights

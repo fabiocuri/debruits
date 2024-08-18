@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 
 import cv2
 import numpy as np
@@ -18,10 +19,11 @@ class Frames2Videos:
     def __init__(self):
 
         self.MODE = sys.argv[1]
-        self.DATASET = sys.argv[2]
-        self.INPUT_FILTER = sys.argv[3]
-        self.TARGET_FILTER = sys.argv[4]
-        self.LEARNING_RATE = sys.argv[5]
+        self.IMAGES_FOLDER = sys.argv[2]
+        self.DATASET = sys.argv[3]
+        self.INPUT_FILTER = sys.argv[4]
+        self.TARGET_FILTER = sys.argv[5]
+        self.LEARNING_RATE = sys.argv[6]
 
         self.config = load_yaml("config_pipeline.yaml")
 
@@ -38,8 +40,7 @@ class Frames2Videos:
 
             self.db, self.fs = connect_to_mongodb(config=self.config)
 
-        self.create_video("evolution")
-        self.create_video("inference")
+        self.create_video()
 
     def extract_ids(self, image_name):
 
@@ -49,7 +50,7 @@ class Frames2Videos:
 
         return id1, id2, image_name
 
-    def create_video(self, data_type):
+    def create_video(self):
 
         if self.MODE == "jenkins":
 
@@ -65,12 +66,14 @@ class Frames2Videos:
 
         if self.MODE == "local":
 
-            imgs = os.listdir(f"data/{data_type}")
+            imgs = os.listdir(self.IMAGES_FOLDER)
 
         imgs = sorted(imgs, key=self.extract_ids)
         imgs = list(dict.fromkeys(imgs))
 
-        temp_file_name = f"data/videos/{self.DATASET}_{data_type}_{self.model_name}.mp4"
+        file_name = str(uuid.uuid1())
+        os.makedirs("data/videos", exist_ok=True)
+        temp_file_name = f"data/videos/{file_name}.mp4"
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
         video_writer = cv2.VideoWriter(
@@ -91,7 +94,7 @@ class Frames2Videos:
 
             if self.MODE == "local":
 
-                data = cv2.imread(f"data/{data_type}/{img}")
+                data = cv2.imread(f"{self.IMAGES_FOLDER}/{img}")
 
             video_writer.write(data)
 
