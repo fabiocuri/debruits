@@ -341,7 +341,7 @@ class Train:
                 )
 
             # Save model and generate samples at specified intervals
-            if (i + 1) % 1 == 0:
+            if (i + 1) % 20 == 0:
                 testA, _ = self.test_dataset
                 for ix in range(testA.shape[0]):
                     X_realA = testA[[ix]]
