@@ -375,6 +375,7 @@ class Train:
 
         # Save models after training
         if self.MODE == "jenkins":
+
             save_model(
                 fs=self.fs,
                 model_object=self.discriminator_model,
@@ -391,6 +392,7 @@ class Train:
                 model_object_name=f"{self.DATASET}_gan_model_{self.model_name}",
             )
         if self.MODE == "local":
+            
             os.makedirs("data/model", exist_ok=True)
             self.discriminator_model.save(
                 f"data/model/{self.DATASET}_discriminator_model_{self.model_name}.h5"
