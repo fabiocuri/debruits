@@ -341,9 +341,12 @@ class Train:
                 )
 
             # Save model and generate samples at specified intervals
-            if (i + 1) % 20 == 0:
+            if (i + 1) % 1 == 0:
+
                 testA, _ = self.test_dataset
+
                 for ix in range(testA.shape[0]):
+
                     X_realA = testA[[ix]]
                     noise = np.random.normal(
                         size=(1, self.IMAGE_DIM, self.IMAGE_DIM, 3)
@@ -359,7 +362,7 @@ class Train:
                     )
 
                     X_fakeB = laplace(X_fakeB)
-                    X_fakeB = cv2.bilateralFilter(X_fakeB, 7, 300, 300)
+                    X_fakeB = cv2.bilateralFilter(X_fakeB, 10, 500, 500)
                     kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
                     X_fakeB = cv2.filter2D(src=X_fakeB, ddepth=-1, kernel=kernel)
 
@@ -392,7 +395,7 @@ class Train:
                 model_object_name=f"{self.DATASET}_gan_model_{self.model_name}",
             )
         if self.MODE == "local":
-            
+
             os.makedirs("data/model", exist_ok=True)
             self.discriminator_model.save(
                 f"data/model/{self.DATASET}_discriminator_model_{self.model_name}.h5"

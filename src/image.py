@@ -72,6 +72,8 @@ class ImageClass:
 
         if FILTER == "special-input":
 
+            self.image = cv2.bitwise_not(self.image)
+
             self.image_slic = slic(self.image, n_segments=1000, compactness=1)
             self.image = label2rgb(self.image_slic, self.image, kind="avg")
 
@@ -81,6 +83,8 @@ class ImageClass:
             self.image = cv2.blur(self.image, (50, 50))
 
         if FILTER == "special-target":
+
+            self.image = cv2.bitwise_not(self.image)
 
             self.image_slic = slic(self.image, n_segments=1000, compactness=1)
             self.image = label2rgb(self.image_slic, self.image, kind="avg")
