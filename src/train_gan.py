@@ -358,16 +358,15 @@ class Train:
                     X_fakeB = np.clip(X_fakeB * 255, 0, 255).astype(np.uint8)
                     X_fakeB = X_fakeB[0]
 
-                    # Apply effects in the end
-
                     X_fakeB = cv2.resize(
                         X_fakeB,
                         (self.IMAGE_DIM, self.IMAGE_DIM),
                         interpolation=cv2.INTER_LINEAR,
                     )
 
-                    X_fakeB = laplace(X_fakeB)
-                    X_fakeB = cv2.bilateralFilter(X_fakeB, 5, 50, 50)
+                    # Apply effects in the end
+
+                    # X_fakeB = laplace(X_fakeB)
 
                     filename = (
                         f"{self.DATASET}_test_evolution_{ix}_step_{i}_{self.model_name}"

@@ -35,10 +35,7 @@ class SuperResolution:
         for img in tqdm(imgs, total=len(imgs)):
 
             data = Image.open(f"{self.IMAGES_FOLDER}/{img}")
-
-            data = ImageOps.solarize(data, threshold=10)
-
-            data = gaussian_filter(data, sigma=0.9)
+            data = np.array(data)
 
             data = cv2.resize(
                 data,
