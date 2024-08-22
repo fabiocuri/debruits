@@ -15,5 +15,5 @@ image_config:
   ENHANCED_WIDTH: 1024
   ENHANCED_HEIGHT: 1024
 video_config:
-  FPS: 5
+  FPS: 10
 timestamp: $TIMESTAMP

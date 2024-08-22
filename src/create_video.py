@@ -71,32 +71,38 @@ class Frames2Videos:
         imgs = sorted(imgs, key=self.extract_ids)
         imgs = list(dict.fromkeys(imgs))
 
-        file_name = str(uuid.uuid1())
         os.makedirs("data/videos", exist_ok=True)
-        temp_file_name = f"data/videos/{file_name}.mp4"
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
-        video_writer = cv2.VideoWriter(
-            temp_file_name,
-            fourcc,
-            self.FPS,
-            (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
-        )
+        images_ids = list(set([str(img.split("_")[3]) for img in imgs]))
 
-        for img in tqdm(imgs):
+        for img in tqdm(images_ids):
 
-            if self.MODE == "jenkins":
+            imgs_this = [x for x in imgs if x.startswith(f"art_test_evolution_{img}")]
 
-                file = self.fs.find_one({"filename": img})
-                image_bytes = file.read()
-                nparr = np.frombuffer(image_bytes, np.uint8)
-                data = nparr.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3).astype(np.uint8)
+            file_name = str(uuid.uuid1())
+            temp_file_name = f"data/videos/{file_name}.mp4"
+            video_writer = cv2.VideoWriter(
+                temp_file_name,
+                fourcc,
+                self.FPS,
+                (self.ENHANCED_WIDTH, self.ENHANCED_HEIGHT),
+            )
 
-            if self.MODE == "local":
+            for img_this in imgs_this:
 
-                data = cv2.imread(f"{self.IMAGES_FOLDER}/{img}")
+                if self.MODE == "jenkins":
 
-            video_writer.write(data)
+                    file = self.fs.find_one({"filename": img})
+                    image_bytes = file.read()
+                    nparr = np.frombuffer(image_bytes, np.uint8)
+                    data = nparr.reshape(self.IMAGE_DIM, self.IMAGE_DIM, 3).astype(np.uint8)
+
+                if self.MODE == "local":
+
+                    data = cv2.imread(f"{self.IMAGES_FOLDER}/{img_this}")
+
+                video_writer.write(data)
 
         video_writer.release()
 
