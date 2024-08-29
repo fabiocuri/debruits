@@ -80,7 +80,7 @@ class ImageClass:
             self.image = laplace(self.image)
             self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
 
-            self.image = cv2.blur(self.image, (50, 50))
+            self.image = cv2.blur(self.image, (30, 30))
 
         if FILTER == "special-target":
 
