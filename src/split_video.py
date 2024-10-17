@@ -3,7 +3,7 @@ import sys
 
 import cv2
 import yaml
-
+import uuid
 
 class SplitVideo:
 
@@ -33,6 +33,8 @@ class SplitVideo:
 
         frame_count = 0
 
+        uid=str(uuid.uuid4())
+
         while True:
 
             ret, frame = video_capture.read()
@@ -42,7 +44,7 @@ class SplitVideo:
 
             if frame_count % frame_interval == 0:
                 frame_filename = (
-                    f"{self.output_path}/frame_{frame_count // frame_interval}.png"
+                    f"{self.output_path}/{uid}_frame_{frame_count // frame_interval}.png"
                 )
                 cv2.imwrite(frame_filename, frame)
 
