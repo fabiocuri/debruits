@@ -11,3 +11,7 @@ data.zip
 *.avi
 frames
 venv_superresolution
+fake_art
+checkpoint
+logs
+new_data

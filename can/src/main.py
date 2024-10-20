@@ -27,6 +27,8 @@ def _main(argv):
 		os.makedirs(FLAGS.checkpoint_dir)
 	if not os.path.exists("new_data"):
 		os.makedirs("new_data")
+	if not os.path.exists("fake_art"):
+		os.makedirs("fake_art")
 
 	cgan = CGAN(FLAGS)
 	cgan.train()
