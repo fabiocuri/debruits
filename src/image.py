@@ -72,25 +72,16 @@ class ImageClass:
 
         if FILTER == "special-input":
 
-            self.image = cv2.bitwise_not(self.image)
-
-            self.image_slic = slic(self.image, n_segments=1000, compactness=1)
-            self.image = label2rgb(self.image_slic, self.image, kind="avg")
-
+            #self.image = cv2.bitwise_not(self.image)
+            self.image = cv2.blur(self.image, (self.BLUR, self.BLUR))
             self.image = laplace(self.image)
-            self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
-
-            self.image = cv2.blur(self.image, (30, 30))
 
         if FILTER == "special-target":
 
             self.image = cv2.bitwise_not(self.image)
+            self.image = cv2.blur(self.image, (self.BLUR, self.BLUR))
 
-            self.image_slic = slic(self.image, n_segments=1000, compactness=1)
-            self.image = label2rgb(self.image_slic, self.image, kind="avg")
-
-            self.image = laplace(self.image)
-            self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
+            #self.image = laplace(self.image)
 
     def input_filter(self, INPUT_FILTER):
 

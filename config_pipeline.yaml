@@ -11,7 +11,7 @@ model_config:
   BATCH_SIZE: 1
 image_config:
   DIM: 1024
-  BLUR: 30
+  BLUR: 50
   ENHANCED_WIDTH: 1024
   ENHANCED_HEIGHT: 1024
 video_config:

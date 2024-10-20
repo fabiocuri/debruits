@@ -347,7 +347,7 @@ class Train:
                 )
 
             # Save model and generate samples at specified intervals
-            if (i + 1) % 1 == 0:
+            if (i + 1) % 10 == 0:
 
                 testA, _ = self.test_dataset
 
