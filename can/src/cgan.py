@@ -1,12 +1,15 @@
+import os
+import time
+
 import numpy as np
 import tensorflow as tf
-import os
-from util import load_data_art,shuffle_data,save_image
-import time
+
+from util import load_data_art, save_image, shuffle_data
+
 
 class CGAN(object):
 
-	def __init__(self,is_training,epoch,checkpoint_dir,learning_rate,z_dim,batch_size,beta1,beta2,image_size):
+	def __init__(self, flags):
 		""""
 		Args:
 			beta1: beta1 for AdamOptimizer
@@ -21,16 +24,18 @@ class CGAN(object):
 			z_dim: sample size from the normal distribution for the generator
 		"""
 
-		self.beta1 = beta1
-		self.beta2 = beta2
-		self.learning_rate = learning_rate
-		self.training = is_training
-		self.batch_size = batch_size
-		self.epoch = epoch
-		self.checkpoint_dir = checkpoint_dir
+		self.FLAGS = flags
+
+		self.beta1 = self.FLAGS.beta1
+		self.beta2 = self.FLAGS.beta2
+		self.learning_rate = self.FLAGS.learning_rate
+		self.training = self.FLAGS.training
+		self.batch_size = self.FLAGS.batch_size
+		self.epoch = self.FLAGS.epochs
+		self.checkpoint_dir = self.FLAGS.checkpoint_dir
 		self.name_art = "fake_art"
-		self.image_size = image_size
-		self.z_dim = z_dim
+		self.image_size = self.FLAGS.image_size
+		self.z_dim = self.FLAGS.z_dim
 		self.scaler = 10.0
 		self.save_epoch = 0
 		self.build_network()

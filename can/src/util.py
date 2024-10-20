@@ -1,6 +1,8 @@
-import numpy as np
 import os
+
+import numpy as np
 from PIL import Image
+
 '''
 ________________________________________________________________________________
 Utilities for the Creative-GAN
@@ -41,8 +43,8 @@ def shuffle_data(training_data):
 def load_data_art():
     training_data = []
 
-    imagepath = "data/train"
-    for file in os.listdir("data/train"):
+    imagepath = "../data/train"
+    for file in os.listdir("../data/train"):
         if file.endswith('.png'):
             image = Image.open(f"{imagepath}/{file}")
             a = np.asarray(image)
@@ -53,35 +55,8 @@ def load_data_art():
                 for i in range(0,8):
                     box=(1+(i*l),1+(j*w),(i+1)*l,(j+1)*w)
                     cropped_image = image.crop(box)
-                    cropped_image.save('can/new_data/%d_%d_%s' % (j,i,file))
-            training_data = resize_image("can/new_data/",(128,128))
+                    cropped_image.save('new_data/%d_%d_%s' % (j,i,file))
+            training_data = resize_image("new_data/",(128,128))
 
-    training_data = np.asarray(training_data)
-    return training_data
-
-
-
-def load_data_small():
-    training_data = []
-    counter = 1
-    if not os.path.exists("C:/Users/Andreas/Desktop/C-GAN/new_data_small"):
-        os.mkdir("C:/Users/Andreas/Desktop/C-GAN/new_data_small")
-        imagepath = "C:/Users/Andreas/Desktop/C-GAN/skizze/"
-        for file in os.listdir("C:/Users/Andreas/Desktop/C-GAN/skizze/"):
-            if file.endswith('.jpg'):
-                print(file)
-                image = Image.open(imagepath+file)
-                a = np.asarray(image)
-                k = a.shape
-                l= k[0] // 2
-                w = k[1] //2
-                for j in range(0,1):
-                    for i in range(0,1):
-                        box=(1+(i*l),1+(j*w),(i+1)*l,(j+1)*w)
-                        cropped_image = image.crop(box)
-                        cropped_image.save('C:/Users/Andreas/Desktop/C-GAN/new_data_small/%d_%d%d_%s' % (j,i,j,file))
-                training_data = resize_image("C:/Users/Andreas/Desktop/C-GAN/new_data_small/",(128,128))
-    #else:
-        #training_data = resize_image("C:/Users/Andreas/Desktop/C-GAN/new_data/",(128,128))
     training_data = np.asarray(training_data)
     return training_data
