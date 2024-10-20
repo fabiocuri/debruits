@@ -1,13 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import os
-from absl import app
-from absl import flags
 from util import load_data_art,shuffle_data,save_image
 import time
-import math
-from random import shuffle
-import random
 
 class CGAN(object):
 
@@ -182,7 +177,7 @@ class CGAN(object):
 			self.start_time = time.time()
 			loss_g_val,loss_d_val = 0, 0
 			self.training_data = self.training_data[0:(self.batch_size*k)]
-			test_counter = 0
+
 			for e in range(0,self.epoch):
 				epoch_loss_d = 0.
 				epoch_loss_g = 0.
