@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
 '''
 ________________________________________________________________________________
@@ -44,19 +45,23 @@ def load_data_art():
     training_data = []
 
     imagepath = "../data/train"
-    for file in os.listdir("../data/train"):
-        if file.endswith('.png'):
-            image = Image.open(f"{imagepath}/{file}")
-            a = np.asarray(image)
-            k = a.shape
-            l= k[0] // 8
-            w = k[1] //8
-            for j in range(0,8):
-                for i in range(0,8):
-                    box=(1+(i*l),1+(j*w),(i+1)*l,(j+1)*w)
-                    cropped_image = image.crop(box)
-                    cropped_image.save('new_data/%d_%d_%s' % (j,i,file))
-            training_data = resize_image("new_data/",(128,128))
+    for file in tqdm(os.listdir("../data/train")):
+        if file.endswith('.jpg'):
+            # image = Image.open(f"{imagepath}/{file}")
+            # a = np.asarray(image)
+            # k = a.shape
+            # l= k[0] // 8
+            # w = k[1] //8
+            # for j in range(0,8):
+            #     for i in range(0,8):
+            #         box=(1+(i*l),1+(j*w),(i+1)*l,(j+1)*w)
+            #         cropped_image = image.crop(box)
 
+            #         cropped_array = np.asarray(cropped_image)
+            #         if np.any(cropped_array > 0):  # Check if the image is not entirely black
+            #             cropped_image.save('new_data/%d_%d_%s' % (j,i,file))
+            print("pass")
+    training_data = resize_image("new_data/",(128,128))
     training_data = np.asarray(training_data)
+    
     return training_data
