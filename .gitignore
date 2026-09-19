@@ -14,3 +14,7 @@ venv_superresolution
 fake_art
 checkpoint
 logs
+
+# Webapp
+webapp/interests/.env
+webapp/interests/data/

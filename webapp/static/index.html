@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DE BRUITS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    @font-face {
+      font-family: 'Debruits';
+      src: url('/font/Debruits-Regular.ttf');
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="logo">DE BRUITS</div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="templates">Templates</button>
+      <button class="tab" data-tab="images">Images</button>
+      <button class="tab" data-tab="params">Parameters</button>
+      <button class="tab" data-tab="info">Info</button>
+    </nav>
+    <div class="header-right">
+      <span class="header-stats" id="header-stats"></span>
+      <button class="btn-generate" id="btn-generate">+ Generate</button>
+    </div>
+  </header>
+
+  <!-- ── Filter bar (hidden on params/info tabs) ── -->
+  <div class="filter-bar" id="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Series</span>
+      <div class="pills" id="pills-series"></div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Format</span>
+      <div class="pills">
+        <button class="pill active" data-filter="format" data-val="">All</button>
+        <button class="pill" data-filter="format" data-val="postcard">Postcard</button>
+        <button class="pill" data-filter="format" data-val="poster">Poster</button>
+        <button class="pill" data-filter="format" data-val="fanzine">Fanzine</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Lang</span>
+      <div class="pills">
+        <button class="pill active" data-filter="lang" data-val="">All</button>
+        <button class="pill" data-filter="lang" data-val="pt">PT</button>
+        <button class="pill" data-filter="lang" data-val="en">EN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <div class="panel active" id="panel-templates">
+      <div class="count-bar" id="count-templates"></div>
+      <div class="grid" id="grid-templates"></div>
+    </div>
+
+    <div class="panel" id="panel-images">
+      <div class="count-bar" id="count-images"></div>
+      <div class="grid" id="grid-images"></div>
+    </div>
+
+    <div class="panel params-panel" id="panel-params">
+      <div id="params-body"></div>
+    </div>
+
+    <div class="panel info-panel" id="panel-info">
+      <div class="info-bar">
+        <span class="info-label">Interests Dashboard</span>
+        <span class="info-url" id="info-url"></span>
+        <a class="btn-secondary small" id="info-open" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+      </div>
+      <iframe class="info-frame" id="info-frame" src="about:blank" title="Interests Dashboard" allow="*"></iframe>
+      <div class="info-notice hidden" id="info-notice">
+        <p>Dashboard is not running. Start it with:</p>
+        <pre id="info-cmd"></pre>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Generate modal ── -->
+  <div class="backdrop hidden" id="gen-backdrop">
+    <div class="modal">
+      <div class="modal-hd">
+        <span class="modal-title">Generate Template</span>
+        <button class="icon-btn" id="gen-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Series</label>
+          <div class="pills" id="gen-pills-series"></div>
+        </div>
+        <div class="form-row">
+          <label>Format</label>
+          <div class="pills">
+            <button class="pill active" data-gen="format" data-val="postcard">Postcard</button>
+            <button class="pill" data-gen="format" data-val="poster">Poster</button>
+            <button class="pill" data-gen="format" data-val="fanzine">Fanzine</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Language</label>
+          <div class="pills">
+            <button class="pill active" data-gen="lang" data-val="pt">PT</button>
+            <button class="pill" data-gen="lang" data-val="en">EN</button>
+          </div>
+        </div>
+        <div class="form-row" id="gen-side-row">
+          <label>Side</label>
+          <div class="pills">
+            <button class="pill active" data-gen="side" data-val="both">Both</button>
+            <button class="pill" data-gen="side" data-val="front">Front</button>
+            <button class="pill" data-gen="side" data-val="back">Back</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn-primary" id="gen-run">Generate</button>
+      </div>
+      <pre class="gen-log hidden" id="gen-log"></pre>
+    </div>
+  </div>
+
+  <!-- ── Lightbox ── -->
+  <div class="lightbox hidden" id="lightbox">
+    <button class="lb-close" id="lb-close">✕</button>
+    <img class="lb-img" id="lb-img" src="" alt="">
+    <div class="lb-bar" id="lb-bar"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

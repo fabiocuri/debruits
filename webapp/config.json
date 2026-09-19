@@ -1,0 +1,35 @@
+{
+  "data_root": "/home/fabiocuri/Documents/DE BRUITS",
+  "info_dashboard_url": "http://localhost:5001",
+  "layout": {
+    "front_margin":   0.020,
+    "front_gap":      0.010,
+    "stamp_right":    0.020,
+    "stamp_bottom":   0.012,
+    "stamp_size":     0.048,
+    "vline_x":        0.932,
+    "vline_y0":       0.060,
+    "vline_y1":       0.940,
+    "hline_y":        0.908,
+    "hline_x0":       0.050,
+    "hline_x1":       0.330,
+    "title_x":        0.050,
+    "title_y":        0.916,
+    "title_size":     0.018,
+    "line_width":     2
+  },
+  "formats": {
+    "postcard": { "size_px": [1754, 2480], "has_back": true },
+    "poster":   { "size_px": [1754, 2480], "has_back": true },
+    "fanzine":  { "size_px": [1754, 2480], "has_back": false }
+  },
+  "series_titles": {
+    "ALGAS":    { "pt": "ALGAS DE PERNAMBUCO",    "en": "ALGAE FROM PERNAMBUCO" },
+    "CONCHAS":  { "pt": "CONCHAS DE PERNAMBUCO",  "en": "SHELLS FROM PERNAMBUCO" },
+    "FRUTAS":   { "pt": "FRUTAS DE PERNAMBUCO",   "en": "FRUITS FROM PERNAMBUCO" },
+    "PLANTAS":  { "pt": "PLANTAS DE PERNAMBUCO",  "en": "PLANTS FROM PERNAMBUCO" },
+    "ABACAXI":  { "pt": "ABACAXI DE PERNAMBUCO",  "en": "PINEAPPLE FROM PERNAMBUCO" },
+    "PIMENTAO": { "pt": "PIMENTAO DE PERNAMBUCO", "en": "BELL PEPPER FROM PERNAMBUCO" },
+    "OSTRA":    { "pt": "OSTRA DE PERNAMBUCO",    "en": "OYSTER FROM PERNAMBUCO" }
+  }
+}
