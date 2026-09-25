@@ -119,7 +119,7 @@ def api_config():
 
 def _safe_send(path: Path):
     resolved = path.resolve()
-    allowed  = {str(ROOT.resolve()), str(DATA_ROOT.resolve())}
+    allowed  = {str(ROOT.resolve()), str(DATA_ROOT.resolve()), str(ICONS_DIR.resolve())}
     if not any(str(resolved).startswith(a) for a in allowed):
         return "Forbidden", 403
     if not resolved.exists():
