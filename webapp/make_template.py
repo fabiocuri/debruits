@@ -15,12 +15,14 @@ Usage
 import argparse
 import json
 import math
+import random
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT      = Path(__file__).resolve().parent
-FONT_PATH = ROOT / "Debruits-Regular.ttf"
+FONT_PATH = ROOT / "DebruitsRegular-Handwritten.ttf"
 
 # ── Config (read from config.json, with hardcoded defaults as fallback) ────────
 
@@ -33,9 +35,9 @@ _DEFAULT_LAYOUT = {
     "line_width": 2,
 }
 _DEFAULT_FORMATS = {
-    "postcard": {"size_px": (1754, 2480), "has_back": True},
-    "poster":   {"size_px": (1754, 2480), "has_back": True},
-    "fanzine":  {"size_px": (1754, 2480), "has_back": False},
+    "postcard":   {"size_px": (1240, 1949), "has_back": True},  # 10.5×16.5 cm @ 300 dpi
+    "mini-poster": {"size_px": (1949, 3189), "has_back": True},  # 16.5×27 cm   @ 300 dpi
+    "poster":     {"size_px": (2480, 3602), "has_back": True},  # 21×30.5 cm   @ 300 dpi
 }
 _DEFAULT_TITLES = {
     "ALGAS":    {"pt": "ALGAS DE PERNAMBUCO",    "en": "ALGAE FROM PERNAMBUCO"},
@@ -61,7 +63,12 @@ def _load_cfg():
     for k, v in raw.get("formats", {}).items():
         formats[k] = {**v, "size_px": tuple(v["size_px"])}
 
-    titles = {**_DEFAULT_TITLES, **raw.get("series_titles", {})}
+    raw_titles = {**_DEFAULT_TITLES, **raw.get("series_titles", {})}
+    titles = {}
+    for s, langs in raw_titles.items():
+        titles[s] = {}
+        for l, v in langs.items():
+            titles[s][l] = v[0] if isinstance(v, list) else v
 
     data_root = Path(raw.get("data_root", ROOT.parent.parent))
     final_dir = data_root / "Final"
@@ -72,12 +79,35 @@ def _load_cfg():
 LAYOUT, FORMATS, SERIES_TITLES, FINAL_DIR, TMPL_DIR = _load_cfg()
 
 
+_GEO_PREP = re.compile(
+    r'\b(DE|DAS|DOS|FROM|VON|VAN|DI|DES|DEL|DEN|DEGLI|DU|DES)\b',
+    re.IGNORECASE,
+)
+
+
+def _split_title_for_print(title: str) -> str:
+    """Insert '\n' before the last geographic preposition when >1 word precedes it."""
+    matches = list(_GEO_PREP.finditer(title))
+    if matches:
+        m = matches[-1]
+        before = title[:m.start()].strip()
+        if len(before.split()) > 1:
+            return before + '\n' + title[m.start():].strip()
+    return title
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def collect_images(series: str) -> list:
-    paths = sorted(FINAL_DIR.glob(f"{series.upper()}_*_upscaled.png"))
-    if not paths:
-        paths = sorted(FINAL_DIR.glob(f"{series.upper()}_*.png"))
+    series_dir = FINAL_DIR / series.upper()
+    if series_dir.is_dir():
+        paths = sorted(series_dir.glob("*_upscaled.png"))
+        if not paths:
+            paths = sorted(series_dir.glob("*.png"))
+    else:
+        paths = sorted(FINAL_DIR.glob(f"{series.upper()}_*_upscaled.png"))
+        if not paths:
+            paths = sorted(FINAL_DIR.glob(f"{series.upper()}_*.png"))
     return paths
 
 
@@ -88,15 +118,46 @@ def load_font(size_px: int):
         return ImageFont.load_default()
 
 
-def place_stamp(draw, W: int, H: int) -> None:
-    L    = LAYOUT
-    size = round(L["stamp_size"] * W)
-    x1   = W - round(L["stamp_right"]  * W)
-    y1   = H - round(L["stamp_bottom"] * H)
+def place_stamp(canvas: Image.Image, W: int, H: int,
+                color=(0, 0, 0, 255), icon_path: str = None, icon_scale: float = 1.0) -> None:
+    L         = LAYOUT
+    base_size = round(L["stamp_size"] * W)
+    x1        = W - round(L["stamp_right"]  * W)
+    y1        = H - round(L["stamp_bottom"] * H)
+
+    if icon_path:
+        try:
+            size    = round(base_size * icon_scale)
+            x0, y0 = x1 - size, y1 - size
+            icon    = Image.open(icon_path).convert("RGBA")
+            icon    = icon.resize((size, size), Image.LANCZOS)
+            canvas.alpha_composite(icon, (x0, y0))
+            # Draw brand name above icon: "d b u t" / "e r i s"
+            draw      = ImageDraw.Draw(canvas)
+            font      = load_font(max(1, round(size * 0.28)))
+            lines    = ["D B U T", "E R I S"]
+            line_gap = max(2, round(size * 0.10))
+            icon_gap = max(4, round(size * 0.15))
+            bboxes   = [draw.textbbox((0, 0), ln, font=font) for ln in lines]
+            ths      = [b[3] - b[1] for b in bboxes]
+            # Anchor: visual bottom of last line = y0 - icon_gap (accounts for b[1] offset)
+            ty = (y0 - icon_gap - bboxes[-1][3]
+                  - sum(ths[:-1]) - line_gap * (len(lines) - 1))
+            for line, bb in zip(lines, bboxes):
+                tw  = bb[2] - bb[0]
+                th  = bb[3] - bb[1]
+                tx  = x0 + (size - tw) // 2
+                draw.text((tx, ty), line, font=font, fill=color)
+                ty += th + line_gap
+            return
+        except Exception:
+            pass  # fall through to text stamp
+
+    size    = base_size
     x0, y0 = x1 - size, y1 - size
 
-    draw.rectangle([x0, y0, x1, y1], outline=(255, 255, 255, 255), width=2)
-
+    draw = ImageDraw.Draw(canvas)
+    draw.rectangle([x0, y0, x1, y1], outline=color, width=2)
     font   = load_font(round(size * 0.26))
     lines  = ["DE", "BRUITS"]
     bboxes = [draw.textbbox((0, 0), ln, font=font) for ln in lines]
@@ -106,17 +167,16 @@ def place_stamp(draw, W: int, H: int) -> None:
     for line, bbox in zip(lines, bboxes):
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
-        draw.text((x0 + (size - tw) // 2, ty), line,
-                  font=font, fill=(255, 255, 255, 255))
+        draw.text((x0 + (size - tw) // 2, ty), line, font=font, fill=color)
         ty += th + gap
 
 
 # ── Builders ───────────────────────────────────────────────────────────────────
 
-def build_front(series: str, size_px: tuple) -> Image.Image:
+def build_front(series: str, size_px: tuple, icon_path: str = None, icon_scale: float = 1.0) -> Image.Image:
     W, H = size_px
     L    = LAYOUT
-    canvas = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
     imgs   = collect_images(series)
 
     if not imgs:
@@ -144,11 +204,150 @@ def build_front(series: str, size_px: tuple) -> Image.Image:
             canvas.alpha_composite(img, (cx + (cell_w - nw) // 2,
                                          cy + (cell_h - nh) // 2))
 
-    place_stamp(ImageDraw.Draw(canvas), W, H)
+    place_stamp(canvas, W, H, icon_path=icon_path, icon_scale=icon_scale)
     return canvas
 
 
-def build_back(series: str, lang: str, size_px: tuple) -> Image.Image:
+def build_front_scattered(series: str, size_px: tuple, count: int, icon_path: str = None, icon_scale: float = 1.0, forced_path: str = None):
+    """Returns (image, layout) where layout is [{path, x, y, w, h}, ...]."""
+    W, H   = size_px
+    L      = LAYOUT
+    canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
+    all_imgs = collect_images(series)
+
+    # Pre-compute stamp bounding box so images never overlap it
+    _base = round(L["stamp_size"] * W)
+    _sz   = round(_base * icon_scale) if icon_path else _base
+    _sx1  = W - round(L["stamp_right"]  * W)
+    _sy1  = H - round(L["stamp_bottom"] * H)
+    _sx0, _sy0 = _sx1 - _sz, _sy1 - _sz
+
+    if not all_imgs:
+        print(f"  Warning: no images found for '{series}' in {FINAL_DIR}")
+        place_stamp(canvas, W, H, icon_path=icon_path, icon_scale=icon_scale)
+        return canvas, []
+
+    if forced_path:
+        selected = [Path(forced_path)]
+    else:
+        selected = random.sample(all_imgs, min(count, len(all_imgs)))
+        random.shuffle(selected)
+    n      = len(selected)
+    n_cols = math.ceil(math.sqrt(n))
+    n_rows = math.ceil(n / n_cols)
+    m      = round(L["front_margin"] * min(W, H))
+    gap    = round(L["front_gap"]    * min(W, H))
+    cell_w = (W - 2 * m - (n_cols - 1) * gap) // n_cols
+    cell_h = (H - 2 * m - (n_rows - 1) * gap) // n_rows
+
+    layout = []
+    for idx, path in enumerate(selected):
+        row = idx // n_cols
+        col = idx % n_cols
+        cx  = m + col * (cell_w + gap)
+        cy  = m + row * (cell_h + gap)
+
+        img_orig = Image.open(path).convert("RGBA")
+        iw, ih   = img_orig.size
+        scale    = min(cell_w / iw, cell_h / ih)
+        nw       = max(1, round(iw * scale))
+        nh       = max(1, round(ih * scale))
+        ox       = (cell_w - nw) // 2
+        oy       = (cell_h - nh) // 2
+        px, py   = cx + ox, cy + oy
+
+        # If this image would overlap the stamp zone, shift it away
+        if px < _sx1 and px + nw > _sx0 and py < _sy1 and py + nh > _sy0:
+            shift_l = px + nw - _sx0  # x-axis overlap amount
+            shift_u = py + nh - _sy0  # y-axis overlap amount
+            if shift_l <= shift_u:
+                px = max(cx, px - shift_l)
+            else:
+                py = max(cy, py - shift_u)
+            # Edge case: still overlapping — scale down to fit non-stamp area
+            if px < _sx1 and px + nw > _sx0 and py < _sy1 and py + nh > _sy0:
+                max_w = max(1, _sx0 - cx)
+                max_h = max(1, _sy0 - cy)
+                s2 = min(max_w / iw, max_h / ih)
+                nw = max(1, round(iw * s2))
+                nh = max(1, round(ih * s2))
+                px = cx + (max_w - nw) // 2
+                py = cy + (max_h - nh) // 2
+
+        img = img_orig.resize((nw, nh), Image.LANCZOS)
+        canvas.alpha_composite(img, (max(0, px), max(0, py)))
+        layout.append({"path": str(path), "x": max(0, px), "y": max(0, py), "w": nw, "h": nh})
+
+    place_stamp(canvas, W, H, icon_path=icon_path, icon_scale=icon_scale)
+    return canvas, layout
+
+
+def _adjust_image(img: Image.Image, brightness: float, contrast: float, bw: bool) -> Image.Image:
+    from PIL import ImageEnhance
+    if bw:
+        r, g, b, a = img.split()
+        gray = Image.merge("RGB", (r, g, b)).convert("L")
+        img = Image.merge("RGBA", (gray, gray, gray, a))
+    if brightness != 100:
+        img = ImageEnhance.Brightness(img).enhance(brightness / 100.0)
+    if contrast != 100:
+        img = ImageEnhance.Contrast(img).enhance(contrast / 100.0)
+    return img
+
+
+def compose_layout(placements: list, size_px: tuple, icon_path: str = None, icon_scale: float = 1.0) -> Image.Image:
+    """Re-composite a front image from dragged placements."""
+    W, H   = size_px
+    canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
+    for p in placements:
+        img = Image.open(p["path"]).convert("RGBA")
+        img = img.resize((int(p["w"]), int(p["h"])), Image.LANCZOS)
+        img = _adjust_image(img,
+                            float(p.get("brightness", 100)),
+                            float(p.get("contrast",   100)),
+                            bool(p.get("bw", False)))
+        rot = float(p.get("rot", 0))
+        if rot:
+            img = img.rotate(-rot, expand=True, resample=Image.BICUBIC)
+        # Center the (possibly rotated) image over the original bounding box center
+        cx = int(p["x"]) + int(p["w"]) // 2
+        cy = int(p["y"]) + int(p["h"]) // 2
+        px = cx - img.width  // 2
+        py = cy - img.height // 2
+        # Clip to canvas bounds
+        sx = max(0, -px); sy = max(0, -py)
+        ex = min(img.width,  W - px)
+        ey = min(img.height, H - py)
+        if ex > sx and ey > sy:
+            canvas.alpha_composite(img.crop((sx, sy, ex, ey)), (max(0, px), max(0, py)))
+    place_stamp(canvas, W, H, icon_path=icon_path, icon_scale=icon_scale)
+    return canvas
+
+
+def _wrap_text(text: str, font, max_width: int, draw: ImageDraw.ImageDraw) -> list:
+    """Word-wrap text to fit within max_width. Preserves paragraph breaks."""
+    lines = []
+    for paragraph in text.split("\n"):
+        words = paragraph.split()
+        if not words:
+            lines.append("")
+            continue
+        current = ""
+        for word in words:
+            test = (current + " " + word).strip()
+            w = draw.textbbox((0, 0), test, font=font)[2]
+            if w <= max_width:
+                current = test
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+    return lines
+
+
+def build_back(series: str, lang: str, size_px: tuple, title: str = None, footer_text: str = None) -> Image.Image:
     W, H = size_px
     L    = LAYOUT
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
@@ -163,39 +362,52 @@ def build_back(series: str, lang: str, size_px: tuple) -> Image.Image:
     draw.line([(round(L["hline_x0"] * W), hy), (round(L["hline_x1"] * W), hy)],
               fill=(0, 0, 0, 255), width=lw)
 
-    title = SERIES_TITLES.get(series.upper(), {}).get(lang, series.upper())
-    font  = load_font(max(10, round(L["title_size"] * H)))
-    draw.text((round(L["title_x"] * W), round(L["title_y"] * H)),
-              title, font=font, fill=(0, 0, 0, 255))
+    if title is None:
+        title = SERIES_TITLES.get(series.upper(), {}).get(lang, series.upper())
+    title = _split_title_for_print(title)
+    title_font = load_font(max(10, round(L["title_size"] * H)))
+    _tdraw = draw.multiline_text if '\n' in title else draw.text
+    _tdraw((round(L["title_x"] * W), round(L["title_y"] * H)),
+           title, font=title_font, fill=(0, 0, 0, 255),
+           stroke_width=2, stroke_fill=(0, 0, 0, 255))
+
+    if footer_text:
+        footer_font_size = max(10, round(L["title_size"] * H * 0.85))
+        footer_font = load_font(footer_font_size)
+        margin_x    = round(0.05 * W)
+        max_w       = vx - 2 * margin_x
+        line_h      = round(footer_font_size * 1.4)
+        para_gap    = round(footer_font_size * 0.6)
+
+        wrapped = _wrap_text(footer_text, footer_font, max_w, draw)
+
+        # Measure total height
+        total_h = 0
+        for ln in wrapped:
+            total_h += para_gap if ln == "" else line_h
+
+        # Anchor text block to bottom of content area; clamp so it never goes above top margin
+        top_margin = round(L["vline_y0"] * H) + round(0.02 * H)
+        bottom_y   = hy - round(0.01 * H)
+        ty         = max(top_margin, bottom_y - total_h)
+
+        for ln in wrapped:
+            if ln == "":
+                ty += para_gap
+                continue
+            draw.text((margin_x, ty), ln, font=footer_font, fill=(0, 0, 0, 255))
+            ty += line_h
 
     return canvas
 
 
-def build_fanzine_pages(series: str, size_px: tuple) -> list:
-    W, H   = size_px
-    L      = LAYOUT
-    m      = round(L["front_margin"] * min(W, H))
-    pages  = []
-
-    for path in collect_images(series):
-        canvas = Image.new("RGBA", (W, H), (0, 0, 0, 255))
-        img    = Image.open(path).convert("RGBA")
-        scale  = min((W - 2 * m) / img.width, (H - 2 * m) / img.height)
-        nw     = max(1, round(img.width  * scale))
-        nh     = max(1, round(img.height * scale))
-        img    = img.resize((nw, nh), Image.LANCZOS)
-        canvas.alpha_composite(img, ((W - nw) // 2, (H - nh) // 2))
-        place_stamp(ImageDraw.Draw(canvas), W, H)
-        pages.append(canvas)
-
-    return pages
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def _save(img: Image.Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(path, "PNG")
+    img.convert("RGB").save(path, "PNG", dpi=(600, 600), compress_level=1)
     try:
         label = path.relative_to(ROOT)
     except ValueError:
@@ -208,7 +420,8 @@ def main() -> None:
     ap.add_argument("series",  help="Series name, e.g. ALGAS")
     ap.add_argument("format",  choices=list(FORMATS))
     ap.add_argument("lang",    choices=["pt", "en"])
-    ap.add_argument("--side",  choices=["front", "back", "both"], default="both")
+    ap.add_argument("--side",  choices=["front", "back"], default="front")
+    ap.add_argument("--count", type=int, default=None, help="Number of images to place (random scatter)")
     ap.add_argument("--out",   help="Override output directory")
     args = ap.parse_args()
 
@@ -221,30 +434,15 @@ def main() -> None:
     print(f"\nDE BRUITS — {args.format.upper()} / {lang.upper()} / {series}")
     print("-" * 50)
 
-    if args.format == "fanzine":
-        out_dir = Path(args.out) if args.out else TMPL_DIR / "FANZINE" / series
-        pages   = build_fanzine_pages(series, size_px)
-        if not pages:
-            print(f"  No images found for '{series}'.")
-            return
-        for i, pg in enumerate(pages, 1):
-            _save(pg, out_dir / f"{i}.png")
-        zine = TMPL_DIR / "FANZINE" / "make_zine.py"
-        try:
-            out_label = out_dir.relative_to(ROOT)
-        except ValueError:
-            out_label = out_dir
-        print(f"\n  {len(pages)} pages written. To assemble:")
-        print(f"  python3 {zine.relative_to(ROOT)} {out_label}")
-    else:
-        out_dir = Path(args.out) if args.out else TMPL_DIR / args.format.upper() / lang_dir
-        sides   = ["front", "back"] if args.side == "both" else [args.side]
-        if not fmt_cfg["has_back"]:
-            sides = [s for s in sides if s != "back"]
-        for side in sides:
-            img  = (build_front(series, size_px) if side == "front"
-                    else build_back(series, lang, size_px))
-            _save(img, out_dir / f"{series}_{side.upper()}.png")
+    out_dir = Path(args.out) if args.out else TMPL_DIR / args.format.upper() / lang_dir
+    for side in [args.side]:
+        if side == "front":
+            img = (build_front_scattered(series, size_px, args.count)[0]
+                   if args.count is not None
+                   else build_front(series, size_px))
+        else:
+            img = build_back(series, lang, size_px)
+        _save(img, out_dir / f"{series}_{side.upper()}.png")
 
     print("\nDone.")
 

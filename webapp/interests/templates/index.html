@@ -206,29 +206,6 @@
 </head>
 <body class="bg-gray-100 font-family-karla flex min-h-screen">
 
-  <!-- Sidebar -->
-  <aside class="bg-sidebar w-64 flex-shrink-0 hidden sm:flex flex-col shadow-xl sticky top-0 h-screen text-white">
-    <div class="p-6">
-      <span class="text-white text-2xl font-semibold uppercase tracking-wide">Dashboard</span>
-    </div>
-    <nav class="text-sm font-semibold flex-grow">
-      {% if agenda_configured %}<a href="#card-agenda" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-calendar-day mr-3 w-4"></i> Agenda</a>{% endif %}
-      {% if email_configured %}<a href="#card-inbox" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-envelope mr-3 w-4"></i> Inbox</a>{% endif %}
-      {% if github_configured %}<a href="#card-github" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fab fa-github mr-3 w-4"></i> GitHub</a>{% endif %}
-      <a href="#card-weather" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-cloud-sun mr-3 w-4"></i> Weather</a>
-      <a href="#card-ai_engineer_tip" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-lightbulb mr-3 w-4"></i> Engineering</a>
-      <a href="#card-map" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-globe mr-3 w-4"></i> World map</a>
-      <a href="#card-world_topic" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-newspaper mr-3 w-4"></i> World event</a>
-      <a href="#card-lebanese_arabic" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-language mr-3 w-4"></i> Arabic</a>
-      <a href="#card-spend" class="flex items-center text-white opacity-90 hover:opacity-100 py-3 pl-6 nav-item"><i class="fas fa-coins mr-3 w-4"></i> Spend</a>
-    </nav>
-    <div class="p-6 text-sm border-t border-white border-opacity-20 space-y-1">
-      <div class="flex justify-between"><span class="opacity-80">Unread mail</span><span class="font-bold" id="stat-unread">&mdash;</span></div>
-      <div class="flex justify-between"><span class="opacity-80">Inbox total</span><span class="font-bold" id="stat-total">&mdash;</span></div>
-      <div class="flex justify-between"><span class="opacity-80">Spend (mo)</span><span class="font-bold">{{ spend.currency }}{{ "%.2f"|format(spend.month.cost) }}</span></div>
-      <div class="flex justify-between"><span class="opacity-80">Editions</span><span class="font-bold">{{ runs|length }}</span></div>
-    </div>
-  </aside>
 
   <div class="w-full flex flex-col min-h-screen">
 

@@ -178,9 +178,9 @@ def index(request: Request):
     runs = storage.load_runs()
     spend = storage.spend_summary()
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "runs": runs,
             "tasks": claude_client.TASKS,
             "state": _state,

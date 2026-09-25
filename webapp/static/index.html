@@ -8,124 +8,311 @@
   <style>
     @font-face {
       font-family: 'Debruits';
-      src: url('/font/Debruits-Regular.ttf');
+      src: url('/font/DebruitsRegular-Handwritten.ttf');
     }
   </style>
 </head>
 <body>
 
-  <!-- ── Header ── -->
-  <header class="header">
-    <div class="logo">DE BRUITS</div>
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-tab="templates">Templates</button>
-      <button class="tab" data-tab="images">Images</button>
-      <button class="tab" data-tab="params">Parameters</button>
-      <button class="tab" data-tab="info">Info</button>
-    </nav>
-    <div class="header-right">
-      <span class="header-stats" id="header-stats"></span>
-      <button class="btn-generate" id="btn-generate">+ Generate</button>
-    </div>
-  </header>
+  <!-- ── Main ── -->
+  <main class="main">
 
-  <!-- ── Filter bar (hidden on params/info tabs) ── -->
-  <div class="filter-bar" id="filter-bar">
-    <div class="filter-group">
-      <span class="filter-label">Series</span>
-      <div class="pills" id="pills-series"></div>
+    <!-- ── Persistent nav (always visible, centered) ── -->
+    <div class="app-nav">
+      <span class="home-logo" id="logo-btn">DE BRUITS</span>
+      <button class="home-tab" data-home-tab="prints">Prints</button>
+      <button class="home-tab" data-home-tab="zines">Zines</button>
+      <button class="home-tab" data-home-tab="paper">Paper</button>
     </div>
-    <div class="filter-group">
-      <span class="filter-label">Format</span>
-      <div class="pills">
-        <button class="pill active" data-filter="format" data-val="">All</button>
-        <button class="pill" data-filter="format" data-val="postcard">Postcard</button>
-        <button class="pill" data-filter="format" data-val="poster">Poster</button>
-        <button class="pill" data-filter="format" data-val="fanzine">Fanzine</button>
+
+    <div class="inner">
+
+      <!-- ── Landing page (theme grid) ── -->
+      <div class="panel active" id="panel-home">
+        <div class="count-bar hidden" id="count-images"></div>
+        <div class="grid grid-themes" id="grid-images"></div>
       </div>
+
+      <div class="panel" id="panel-prints">
+        <!-- Toolbar built by buildToolbar('prints', …) -->
+        <div class="panel-toolbar" id="toolbar-prints"></div>
+        <div class="count-bar" id="count-prints"></div>
+        <!-- 5-slot area: 4 card columns + filter as 5th slot -->
+        <div class="panel-grid-area">
+          <div class="grid" id="grid-prints"></div>
+          <div class="panel-sidebar">
+            <!-- Filter sidebar built by buildFilterSidebar(…, 'prints') -->
+            <div class="prints-filters" id="filters-prints"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-zines">
+        <!-- Toolbar built by buildToolbar('zines', …) -->
+        <div class="panel-toolbar" id="toolbar-zines"></div>
+        <div class="count-bar" id="count-zines-grid"></div>
+        <!-- 5-slot area: 4 card columns + filter as 5th slot -->
+        <div class="panel-grid-area">
+          <div class="grid" id="grid-zines"></div>
+          <div class="panel-sidebar">
+            <!-- Filter sidebar built by buildFilterSidebar(…, 'zines') -->
+            <div class="prints-filters" id="filters-zines"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel paper-panel" id="panel-paper">
+        <table class="paper-table" id="paper-table-postcard"></table>
+        <table class="paper-table" id="paper-table-mini-poster"></table>
+        <table class="paper-table" id="paper-table-poster"></table>
+      </div>
+
+
     </div>
-    <div class="filter-group">
-      <span class="filter-label">Lang</span>
-      <div class="pills">
-        <button class="pill active" data-filter="lang" data-val="">All</button>
-        <button class="pill" data-filter="lang" data-val="pt">PT</button>
-        <button class="pill" data-filter="lang" data-val="en">EN</button>
+  </main>
+
+  <!-- ── Add Print modal ── -->
+  <div class="backdrop hidden" id="gen-backdrop">
+    <div class="modal" id="gen-modal">
+
+      <!-- Step 1: Selection -->
+      <div id="gen-step-1">
+        <div class="modal-hd">
+          <span class="modal-title" id="gen-modal-title">Create</span>
+          <button class="icon-btn" id="gen-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Format</label>
+            <div class="pills">
+              <button class="pill active" data-gen="format" data-val="postcard">Postcard</button>
+              <button class="pill" data-gen="format" data-val="mini-poster">Mini-Poster</button>
+              <button class="pill" data-gen="format" data-val="poster">Poster</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Theme</label>
+            <div class="pills" id="gen-pills-series"></div>
+          </div>
+          <div class="form-row hidden" id="gen-count-row">
+            <label>Images</label>
+            <div class="pills">
+              <button class="pill active" data-gen="count-mode" data-val="all">All</button>
+              <button class="pill" data-gen="count-mode" data-val="one">One</button>
+            </div>
+          </div>
+          <div class="form-row hidden" id="gen-image-picker-row">
+            <label>Select Photo</label>
+            <div class="image-picker" id="gen-image-picker"></div>
+          </div>
+          <div class="form-row" id="gen-lang-row">
+            <label>Language</label>
+            <div class="pills">
+              <button class="pill active" data-gen="lang" data-val="pt">PT</button>
+              <button class="pill" data-gen="lang" data-val="en">EN</button>
+              <button class="pill" data-gen="lang" data-val="es">ES</button>
+              <button class="pill" data-gen="lang" data-val="fr">FR</button>
+            </div>
+          </div>
+          <div class="form-row" id="gen-back-text-row">
+            <label>Title</label>
+            <select class="back-text-select" id="gen-back-text-select"></select>
+            <input type="text" class="txt-input hidden" id="gen-back-custom-input" placeholder="Type back text…">
+          </div>
+          <div class="form-row" id="gen-icon-row">
+            <label>Icon</label>
+            <div class="icon-row-inner">
+              <div class="icon-picker" id="gen-icon-picker"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-ft">
+          <button class="btn-primary" id="gen-preview-btn">Preview ></button>
+        </div>
+        <pre class="gen-log hidden" id="gen-log"></pre>
+      </div>
+
+      <!-- Step 2: Preview -->
+      <div id="gen-step-2" class="hidden">
+        <div class="modal-hd">
+          <span class="modal-title" id="gen-preview-title">Preview</span>
+          <button class="icon-btn" id="gen-close-2">✕</button>
+        </div>
+        <div class="gen-preview-body">
+          <!-- draggable canvas (front+count) -->
+          <div class="gen-canvas-wrap hidden" id="gen-canvas-wrap"></div>
+          <!-- flat image fallback (back side etc.) -->
+          <img class="gen-preview-img hidden" id="gen-preview-img" src="" alt="">
+        </div>
+        <!-- Per-element adjustment controls (shown when an element is selected) -->
+        <div class="adj-bar hidden" id="item-adj-bar">
+          <span class="adj-label">Brightness</span>
+          <input type="range" class="adj-slider" min="0" max="300" value="100" id="adj-brightness">
+          <span class="adj-val" id="adj-brightness-val">100</span>
+          <span class="adj-sep"></span>
+          <span class="adj-label">Contrast</span>
+          <input type="range" class="adj-slider" min="0" max="300" value="100" id="adj-contrast">
+          <span class="adj-val" id="adj-contrast-val">100</span>
+        </div>
+        <div class="modal-ft gen-preview-ft">
+          <button class="btn-secondary" id="gen-back-btn">Back</button>
+          <button class="btn-secondary" id="btn-bw-toggle">B&W</button>
+          <div class="czine-scale-ctrl">
+            <span class="adj-label">Scale</span>
+            <input type="range" class="adj-slider" min="10" max="300" value="100" id="print-scale-slider">
+            <span class="adj-val" id="print-scale-val">100%</span>
+          </div>
+          <button class="btn-primary" id="gen-save-btn">Save</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Create Zine modal ── -->
+  <div class="backdrop hidden" id="czine-backdrop">
+    <div class="modal modal-wide" id="czine-modal">
+
+      <!-- Step 1: Image selection -->
+      <div id="czine-step-1">
+        <div class="modal-hd">
+          <span class="modal-title">Create Zine</span>
+          <button class="icon-btn" id="czine-close">✕</button>
+        </div>
+        <div class="modal-body modal-body-scroll">
+          <div class="form-row">
+            <label>Format</label>
+            <div class="pills">
+              <button class="pill active" data-czf="mini-poster">Mini Poster</button>
+              <button class="pill" data-czf="poster">Poster</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Theme</label>
+            <div class="pills" id="czine-pills-series"></div>
+          </div>
+          <div class="form-row">
+            <label>Language</label>
+            <div class="pills" id="czine-pills-lang">
+              <button class="pill active" data-czl="pt">PT</button>
+              <button class="pill" data-czl="en">EN</button>
+              <button class="pill" data-czl="es">ES</button>
+              <button class="pill" data-czl="fr">FR</button>
+            </div>
+          </div>
+          <div id="czine-images-section" class="hidden">
+            <div class="form-row">
+              <label>Images</label>
+              <div class="czine-select-btns">
+                <button class="btn-secondary" id="czine-select-all">All</button>
+                <button class="btn-secondary" id="czine-select-none">None</button>
+              </div>
+            </div>
+            <div class="adj-bar hidden" id="czine-adj-bar">
+              <span class="adj-label">Brightness</span>
+              <input type="range" class="adj-slider" min="0" max="300" value="100" id="czine-adj-brightness">
+              <span class="adj-val" id="czine-adj-brightness-val">100</span>
+              <span class="adj-sep"></span>
+              <span class="adj-label">Contrast</span>
+              <input type="range" class="adj-slider" min="0" max="300" value="100" id="czine-adj-contrast">
+              <span class="adj-val" id="czine-adj-contrast-val">100</span>
+            </div>
+            <div class="czine-grid" id="czine-image-grid"></div>
+          </div>
+          <div class="czine-icon-row" id="czine-icon-row-s1">
+            <span class="czine-icon-label">Icon</span>
+            <div class="icon-picker" id="czine-icon-picker"></div>
+          </div>
+        </div>
+        <div class="modal-ft czine-ft-col">
+          <div class="czine-ft-actions">
+            <button class="btn-primary" id="czine-preview-btn" disabled>Preview ></button>
+          </div>
+          <div class="zines-status" id="czine-status"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Spread preview -->
+      <div id="czine-step-2" class="hidden">
+        <div class="modal-hd">
+          <span class="modal-title">Zine Preview</span>
+          <div class="czine-nav-bar">
+            <button class="btn-secondary btn-sm" id="czine-prev-spread">&lt;</button>
+            <span id="czine-spread-label">Spread 1 / 1</span>
+            <button class="btn-secondary btn-sm" id="czine-next-spread">&gt;</button>
+          </div>
+          <button class="icon-btn" id="czine-close-2">✕</button>
+        </div>
+        <div class="czine-preview-body">
+          <div class="czine-spread-canvas" id="czine-spread-canvas"></div>
+        </div>
+        <div class="adj-bar hidden" id="czine-pg-adj-bar">
+          <span class="adj-label">Brightness</span>
+          <input type="range" class="adj-slider" min="0" max="300" value="100" id="czine-pg-brightness">
+          <span class="adj-val" id="czine-pg-brightness-val">100</span>
+          <span class="adj-sep"></span>
+          <span class="adj-label">Contrast</span>
+          <input type="range" class="adj-slider" min="0" max="300" value="100" id="czine-pg-contrast">
+          <span class="adj-val" id="czine-pg-contrast-val">100</span>
+        </div>
+        <div class="czine-text-row" id="czine-text-row">
+          <div class="czine-text-field">
+            <span class="czine-text-label" id="czine-text-label-left">Page 1</span>
+            <button class="czine-center-btn" id="czine-center-left">Center</button>
+            <textarea class="czine-text-input" id="czine-text-left" placeholder="Page text…" rows="6"></textarea>
+          </div>
+          <div class="czine-text-field">
+            <span class="czine-text-label" id="czine-text-label-right">Page 2</span>
+            <button class="czine-center-btn" id="czine-center-right">Center</button>
+            <textarea class="czine-text-input" id="czine-text-right" placeholder="Page text…" rows="6"></textarea>
+          </div>
+        </div>
+        <div class="modal-ft gen-preview-ft">
+          <button class="btn-secondary" id="czine-back-btn">Back</button>
+          <button class="btn-secondary" id="czine-pg-bw-toggle">B&W</button>
+          <div class="czine-scale-ctrl">
+            <span class="adj-label">Scale</span>
+            <input type="range" class="adj-slider" min="10" max="300" value="100" id="czine-scale-slider">
+            <span class="adj-val" id="czine-scale-val">100%</span>
+          </div>
+          <div class="czine-scale-ctrl hidden" id="czine-cover-scale-ctrl">
+            <span class="adj-label">Cover</span>
+            <input type="range" class="adj-slider" min="10" max="300" value="100" id="czine-cover-scale-slider">
+            <span class="adj-val" id="czine-cover-scale-val">100%</span>
+          </div>
+          <button class="btn-primary" id="czine-save-btn">Save</button>
+        </div>
+        <div class="zines-status czine-save-status" id="czine-save-status"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Theme Titles modal ── -->
+  <div class="backdrop hidden" id="titles-backdrop">
+    <div class="modal modal-wide" id="titles-modal">
+      <div class="modal-hd">
+        <span class="modal-title">Theme Titles</span>
+        <button class="icon-btn" id="titles-close">✕</button>
+      </div>
+      <div class="modal-body modal-body-scroll" id="titles-modal-body"></div>
+      <div class="modal-ft">
+        <button class="btn-primary" id="btn-save-titles">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- ── Main ── -->
-  <main class="main">
-
-    <div class="panel active" id="panel-templates">
-      <div class="count-bar" id="count-templates"></div>
-      <div class="grid" id="grid-templates"></div>
-    </div>
-
-    <div class="panel" id="panel-images">
-      <div class="count-bar" id="count-images"></div>
-      <div class="grid" id="grid-images"></div>
-    </div>
-
-    <div class="panel params-panel" id="panel-params">
-      <div id="params-body"></div>
-    </div>
-
-    <div class="panel info-panel" id="panel-info">
-      <div class="info-bar">
-        <span class="info-label">Interests Dashboard</span>
-        <span class="info-url" id="info-url"></span>
-        <a class="btn-secondary small" id="info-open" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
-      </div>
-      <iframe class="info-frame" id="info-frame" src="about:blank" title="Interests Dashboard" allow="*"></iframe>
-      <div class="info-notice hidden" id="info-notice">
-        <p>Dashboard is not running. Start it with:</p>
-        <pre id="info-cmd"></pre>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- ── Generate modal ── -->
-  <div class="backdrop hidden" id="gen-backdrop">
-    <div class="modal">
+  <!-- ── Back Description modal (shared: prints + zines) ── -->
+  <div class="backdrop hidden" id="desc-backdrop">
+    <div class="modal modal-wide" id="desc-modal">
       <div class="modal-hd">
-        <span class="modal-title">Generate Template</span>
-        <button class="icon-btn" id="gen-close">✕</button>
+        <span class="modal-title">Back Description</span>
+        <button class="icon-btn" id="desc-close">✕</button>
       </div>
-      <div class="modal-body">
-        <div class="form-row">
-          <label>Series</label>
-          <div class="pills" id="gen-pills-series"></div>
-        </div>
-        <div class="form-row">
-          <label>Format</label>
-          <div class="pills">
-            <button class="pill active" data-gen="format" data-val="postcard">Postcard</button>
-            <button class="pill" data-gen="format" data-val="poster">Poster</button>
-            <button class="pill" data-gen="format" data-val="fanzine">Fanzine</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label>Language</label>
-          <div class="pills">
-            <button class="pill active" data-gen="lang" data-val="pt">PT</button>
-            <button class="pill" data-gen="lang" data-val="en">EN</button>
-          </div>
-        </div>
-        <div class="form-row" id="gen-side-row">
-          <label>Side</label>
-          <div class="pills">
-            <button class="pill active" data-gen="side" data-val="both">Both</button>
-            <button class="pill" data-gen="side" data-val="front">Front</button>
-            <button class="pill" data-gen="side" data-val="back">Back</button>
-          </div>
-        </div>
-      </div>
+      <div class="modal-body modal-body-scroll" id="desc-modal-body"></div>
       <div class="modal-ft">
-        <button class="btn-primary" id="gen-run">Generate</button>
+        <button class="btn-primary" id="btn-save-desc">Save</button>
       </div>
-      <pre class="gen-log hidden" id="gen-log"></pre>
     </div>
   </div>
 

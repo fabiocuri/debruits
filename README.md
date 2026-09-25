@@ -1,9 +1,20 @@
 # DE BRUITS
 
-DE BRUITS is an art project that combines microscopy and macro photography with AI image generation (GAN/CAN) to produce postcards, posters, and fanzines.
+DE BRUITS is an art project combining microscopy and macro photography to produce postcards, posters, and fanzines.
 
-**Author:** Fabio Curi  
-**Contact:** fcuri91@gmail.com
+**Author:** Fabio Curi · fcuri91@gmail.com
+
+---
+
+## Quick start
+
+```bash
+cd webapp
+pip install flask pillow pypdf img2pdf
+python3 app.py
+```
+
+Open **http://localhost:5000**
 
 ---
 
@@ -11,40 +22,27 @@ DE BRUITS is an art project that combines microscopy and macro photography with 
 
 ```
 debruits/
-├── can/          Creative Adversarial Network — style-divergent image generation
-├── gan/          Generative Adversarial Network — image synthesis and processing
-├── frontend/     Legacy Vue.js frontend (archived)
-└── webapp/       Project dashboard — template generation, image browser, interests tab
+├── webapp/       Main dashboard — template generation, image browser, zine editor
+└── legacy/       Archived experiments — not maintained
 ```
 
-## Quick start
+---
 
-The webapp is the main daily interface. It starts both the DE BRUITS dashboard and the personal interests panel in one command:
+## Configuration
+
+Edit `webapp/config.json`:
+
+| Key | Description |
+|-----|-------------|
+| `data_root` | Absolute path to your working directory (where `Final/` lives) |
+| `info_dashboard_url` | Interests dashboard URL (default `http://localhost:5001`) |
+
+---
+
+## CLI template generation
 
 ```bash
 cd webapp
-pip install flask pillow fastapi "uvicorn[standard]" anthropic jinja2 python-dotenv icalendar recurring-ical-events markupsafe
-python3 app.py
+python3 make_template.py ALGAS postcard pt
+python3 make_template.py CONCHAS poster en --side front
 ```
-
-Open **http://localhost:5000**.
-
-See [`webapp/README.md`](webapp/README.md) for full setup details.
-
-## Image generation
-
-### CAN (Creative Adversarial Network)
-```bash
-cd can
-pip install -r requirements_can.txt
-bash run_local_can.sh
-```
-
-### GAN
-```bash
-cd gan
-pip install -r requirements_gan.txt
-bash run_local_gan.sh
-```
-
-Generated images land in the `Final/` directory configured in `webapp/config.json` and appear automatically in the dashboard's Images tab.

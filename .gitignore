@@ -1,20 +1,28 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
-venv_gan
-venv_can
-venv
-data
-data.zip
-*.mp4
-*.MOV
-*.png
-*.avi
-frames
-venv_superresolution
-fake_art
-checkpoint
-logs
+*.pyc
+venv/
+venv_*/
 
-# Webapp
+# Runtime / generated
+webapp/thumbnails.json
 webapp/interests/.env
 webapp/interests/data/
+
+# Large media / generated assets (stored outside repo)
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.MOV
+*.avi
+data/
+data.zip
+frames/
+checkpoint/
+logs/
+fake_art/
+
+# Legacy ML dirs
+icons/
+themes/
