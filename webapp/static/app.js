@@ -44,6 +44,10 @@ const S = {
   czineEditName:     null,
   czineGlobalScale:  100,
   czineCoverScale:   100,
+  czineMiscMode:     false,
+  czineMiscN:        'all',
+  czineMiscNVal:     5,
+  czineM:            1,
   printGlobalScale:  100,
   layout:            null,
   layoutSize:        null,
@@ -1158,6 +1162,7 @@ function openZineEditModal(z) {
   S.czineSpread      = 0;
   S.czineActivePgIdx = null;
   S.czineGlobalScale = z.globalScale || 100;
+  S.czineM           = z.M || 1;
   const numSpreads   = Math.ceil(S.czineLayout.length / 2);
   const HALF_W = (z.canvasW || 680) / 2;
   const CANVAS_H = z.canvasH || 380;
@@ -1204,31 +1209,51 @@ function openCzineModal() {
   document.getElementById('czine-images-section').classList.add('hidden');
   document.getElementById('czine-image-grid').innerHTML = '';
   document.getElementById('czine-adj-bar').classList.add('hidden');
-  S.czineEditName = null;
-  S.czineBw = false;
+  document.getElementById('czine-misc-row').classList.add('hidden');
+  document.getElementById('czine-misc-m-row').classList.add('hidden');
+  S.czineEditName   = null;
+  S.czineBw         = false;
+  S.czineMiscMode   = false;
+  S.czineMiscN      = 'all';
+  S.czineM          = 1;
   selectCzineIcon('');
   showCzineStep(1);
 
-  // Build theme pills from S.images series
+  // Reset N pills to ALL active
+  document.querySelectorAll('#czine-misc-n-pills [data-czn]').forEach(b =>
+    b.classList.toggle('active', b.dataset.czn === 'all'));
+  document.getElementById('czine-misc-n-input').classList.add('hidden');
+  document.getElementById('czine-misc-m-input').value = '1';
+
+  // Build theme pills from S.images series + MISCELLANEOUS
   const seriesSet = [...new Set(S.images.map(i => i.series).filter(Boolean))].sort();
   const pillsEl = document.getElementById('czine-pills-series');
   pillsEl.innerHTML = seriesSet.map(s =>
     `<button class="pill" data-czs="${s}">${s}</button>`
-  ).join('');
+  ).join('') + `<button class="pill" data-czs="__misc__">MISC</button>`;
+
+  const activateSeries = (czs) => {
+    pillsEl.querySelectorAll('[data-czs]').forEach(b => b.classList.remove('active'));
+    pillsEl.querySelector(`[data-czs="${czs}"]`)?.classList.add('active');
+    const isMisc = czs === '__misc__';
+    S.czineMiscMode = isMisc;
+    document.getElementById('czine-misc-row').classList.toggle('hidden', !isMisc);
+    document.getElementById('czine-misc-m-row').classList.toggle('hidden', !isMisc);
+    if (isMisc) {
+      document.getElementById('czine-images-section').classList.add('hidden');
+      document.getElementById('czine-preview-btn').disabled = false;
+    } else {
+      loadCzineImages(czs);
+    }
+  };
+
+  pillsEl.querySelectorAll('[data-czs]').forEach(btn => {
+    btn.addEventListener('click', () => activateSeries(btn.dataset.czs));
+  });
 
   // Pre-select current browsed theme if available
   const preselect = S.zinesImageSeries;
-  pillsEl.querySelectorAll('[data-czs]').forEach(btn => {
-    if (btn.dataset.czs === preselect) {
-      btn.classList.add('active');
-      loadCzineImages(preselect);
-    }
-    btn.addEventListener('click', () => {
-      pillsEl.querySelectorAll('[data-czs]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadCzineImages(btn.dataset.czs);
-    });
-  });
+  if (preselect && seriesSet.includes(preselect)) activateSeries(preselect);
 
   document.getElementById('czine-backdrop').classList.remove('hidden');
 }
@@ -1327,6 +1352,8 @@ function closeCzineModal() {
   document.getElementById('czine-cover-scale-ctrl').classList.add('hidden');
   S.czineActivePgIdx  = null;
   S.czineGlobalScale  = 100;
+  S.czineMiscMode     = false;
+  S.czineM            = 1;
   const saveBtn = document.getElementById('czine-save-btn');
   saveBtn.disabled = false; saveBtn.textContent = 'Save';
   document.getElementById('czine-save-status').textContent = '';
@@ -1350,21 +1377,20 @@ function autoSplitTitle(t) {
   return t;
 }
 
-function buildCzineLayout(imageEntries) {
+function buildCzineLayout(imageEntries, P = 1) {
   const CANVAS_W = 680;
   const HALF_W   = 340;
   const MARGIN   = 30;
-  const fmt      = ZINE_FORMATS[S.czineFormat] || ZINE_FORMATS['postcard'];
+  const fmt      = ZINE_FORMATS[S.czineFormat] || ZINE_FORMATS['mini-poster'];
   const CANVAS_H = Math.round(CANVAS_W * fmt.paperH / fmt.paperW);
   S.czineSize = { canvasW: CANVAS_W, canvasH: CANVAS_H };
+  S.czineM    = P;
 
-  // odd M  → 3 trailing blanks (N-2, N-1, N)
-  // even M → 4 trailing blanks (N-3, N-2, N-1, N)
-  // Round to next multiple of 4 so PDF imposition adds no hidden extra blanks.
-  const M        = imageEntries.length;
-  const baseLen  = (M % 2 === 0) ? (M + 6) : (M + 5);
-  const totalLen = Math.ceil(baseLen / 4) * 4;
-  const nTrailing = totalLen - M - 2;
+  // Group images into slots of P each
+  const numSlots  = Math.ceil(imageEntries.length / P);
+  const baseLen   = (numSlots % 2 === 0) ? (numSlots + 6) : (numSlots + 5);
+  const totalLen  = Math.ceil(baseLen / 4) * 4;
+  const nTrailing = totalLen - numSlots - 2;
 
   const mkWhite = absIdx => ({
     url: null, path: null,
@@ -1374,7 +1400,6 @@ function buildCzineLayout(imageEntries) {
 
   const layout = [mkWhite(0), mkWhite(1)];  // cover (physical pages 1, 2)
 
-  // Place selected cover image at position 0 (the front cover page)
   if (S.czineCoverPath) {
     layout[0] = {
       url: S.czineCoverPath, path: S.czineCoverPath,
@@ -1383,26 +1408,59 @@ function buildCzineLayout(imageEntries) {
     };
   }
 
-  imageEntries.forEach((entry, i) => {
-    const absIdx = layout.length;
-    const slotX  = (absIdx % 2) * HALF_W;
-    const meta   = S.images.find(img => img.path === entry.path);
-    const srcW   = meta?.width  || 1000;
-    const srcH   = meta?.height || 1000;
-    const availW = HALF_W - 2 * MARGIN;
-    const availH = CANVAS_H - 2 * MARGIN;
-    const fs     = Math.min(availW / srcW, availH / srcH);
-    const w      = Math.round(srcW * fs);
-    const h      = Math.round(srcH * fs);
-    layout.push({
-      url: entry.path, path: entry.path,
-      x: slotX + Math.round((HALF_W - w) / 2),
-      y: Math.round((CANVAS_H - h) / 2),
-      w, h, rot: 0,
-      brightness: entry.brightness || 100,
-      contrast:   entry.contrast   || 100,
-    });
-  });
+  for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
+    const absIdx   = layout.length;
+    const slotX    = (absIdx % 2) * HALF_W;
+    const chunk    = imageEntries.slice(slotIdx * P, (slotIdx + 1) * P);
+    const cellH    = Math.floor(CANVAS_H / chunk.length);
+
+    if (chunk.length === 1) {
+      const entry  = chunk[0];
+      const meta   = S.images.find(img => img.path === entry.path);
+      const srcW   = meta?.width  || 1000;
+      const srcH   = meta?.height || 1000;
+      const availW = HALF_W - 2 * MARGIN;
+      const availH = CANVAS_H - 2 * MARGIN;
+      const fs     = Math.min(availW / srcW, availH / srcH);
+      const w      = Math.round(srcW * fs);
+      const h      = Math.round(srcH * fs);
+      layout.push({
+        url: entry.path, path: entry.path,
+        x: slotX + Math.round((HALF_W - w) / 2),
+        y: Math.round((CANVAS_H - h) / 2),
+        w, h, rot: 0,
+        brightness: entry.brightness || 100,
+        contrast:   entry.contrast   || 100,
+      });
+    } else {
+      // Multiple images per slot — store as `images` sub-array, each fitted into its cell
+      const subImages = chunk.map((entry, j) => {
+        const meta   = S.images.find(img => img.path === entry.path);
+        const srcW   = meta?.width  || 1000;
+        const srcH   = meta?.height || 1000;
+        const cellY  = j * cellH;
+        const availW = HALF_W - 2 * MARGIN;
+        const availH = cellH  - 2 * MARGIN;
+        const fs     = Math.min(availW / srcW, availH / srcH);
+        const w      = Math.round(srcW * fs);
+        const h      = Math.round(srcH * fs);
+        return {
+          url: entry.path, path: entry.path,
+          x: slotX + Math.round((HALF_W - w) / 2),
+          y: cellY + Math.round((cellH - h) / 2),
+          w, h, rot: 0,
+          brightness: entry.brightness || 100,
+          contrast:   entry.contrast   || 100,
+        };
+      });
+      layout.push({
+        url: chunk[0].path, path: chunk[0].path,
+        x: slotX, y: 0, w: HALF_W, h: CANVAS_H,
+        rot: 0, brightness: 100, contrast: 100,
+        images: subImages,
+      });
+    }
+  }
 
   for (let i = 0; i < nTrailing; i++) layout.push(mkWhite(layout.length));
 
@@ -1426,7 +1484,7 @@ function buildCzineLayout(imageEntries) {
 
   const bd = S.config?.back_description || {};
   const bdText = (bd[S.czineLang] || bd.pt || bd.en || bd.es || bd.fr || '').trim().toUpperCase();
-  const CANVAS_MARGIN = 28; // matches Python CANVAS_MARGIN; baked into position so preview == PDF
+  const CANVAS_MARGIN = 28;
   if (bdText) {
     S.czineTexts[0].right.text = bdText;
     S.czineTexts[0].right.x   = HALF_W + CANVAS_MARGIN;
@@ -1435,33 +1493,61 @@ function buildCzineLayout(imageEntries) {
 }
 
 function openCzinePreview() {
-  const series = document.querySelector('#czine-pills-series .pill.active')?.dataset.czs || '';
-  if (!series) return;
   S.czineFormat = document.querySelector('[data-czf].active')?.dataset.czf || 'mini-poster';
   S.czineLang   = document.querySelector('#czine-pills-lang .pill.active')?.dataset.czl || 'pt';
 
-  const imageEntries =[...document.querySelectorAll('#czine-image-grid input[type=checkbox]:checked')]
-    .map(cb => {
-      const tile = cb.closest('.czine-img-tile');
-      return {
-        path:       cb.dataset.path,
-        brightness: parseInt(tile.dataset.brightness || '100'),
-        contrast:   parseInt(tile.dataset.contrast   || '100'),
-      };
-    });
+  let imageEntries, M;
 
-  if (!imageEntries.length) {
-    document.getElementById('czine-status').textContent = 'No images selected.';
-    return;
+  if (S.czineMiscMode) {
+    M = Math.max(1, parseInt(document.getElementById('czine-misc-m-input').value) || 1);
+    const nMode = S.czineMiscN;
+    const nVal  = Math.max(1, parseInt(document.getElementById('czine-misc-n-input').value) || 5);
+    const allSeries = [...new Set(S.images.map(i => i.series).filter(Boolean))].sort();
+    imageEntries = [];
+    allSeries.forEach(ser => {
+      const imgs = S.images.filter(i => i.series === ser).slice().sort((a, b) => a.index - b.index);
+      const take = nMode === 'all' ? imgs : imgs.slice(0, nVal);
+      take.forEach(img => imageEntries.push({ path: img.path, brightness: 100, contrast: 100 }));
+    });
+    if (!imageEntries.length) {
+      document.getElementById('czine-status').textContent = 'No images found.';
+      return;
+    }
+    // Shuffle before distributing M per page
+    for (let i = imageEntries.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [imageEntries[i], imageEntries[j]] = [imageEntries[j], imageEntries[i]];
+    }
+    S.czineSeries    = 'MISC';
+    S.czineCoverPath = null;
+    S.czineM         = M;
+  } else {
+    M = 1;
+    const series = document.querySelector('#czine-pills-series .pill.active')?.dataset.czs || '';
+    if (!series) return;
+    imageEntries = [...document.querySelectorAll('#czine-image-grid input[type=checkbox]:checked')]
+      .map(cb => {
+        const tile = cb.closest('.czine-img-tile');
+        return {
+          path:       cb.dataset.path,
+          brightness: parseInt(tile.dataset.brightness || '100'),
+          contrast:   parseInt(tile.dataset.contrast   || '100'),
+        };
+      });
+    if (!imageEntries.length) {
+      document.getElementById('czine-status').textContent = 'No images selected.';
+      return;
+    }
+    S.czineSeries    = series;
+    const coverTile  = document.querySelector('#czine-image-grid .czine-cover-active');
+    S.czineCoverPath = coverTile ? coverTile.dataset.path : null;
+    S.czineM         = 1;
   }
 
-  S.czineSeries      = series;
   S.czineSpread      = 0;
   S.czineActivePgIdx = null;
   S.czineGlobalScale = 100;
-  const coverTile = document.querySelector('#czine-image-grid .czine-cover-active');
-  S.czineCoverPath = coverTile ? coverTile.dataset.path : null;
-  buildCzineLayout(imageEntries);
+  buildCzineLayout(imageEntries, M);
 
   document.getElementById('czine-scale-slider').value = 100;
   document.getElementById('czine-scale-val').textContent = '100%';
@@ -1483,9 +1569,12 @@ function applyCzineItemFilter(img, brightness, contrast) {
 
 function refreshAllCzineItemFilters() {
   document.querySelectorAll('#czine-spread-canvas .drag-item').forEach(box => {
-    const img  = box.querySelector('img');
-    const item = S.czineLayout[parseInt(box.dataset.idx)];
-    if (img && item) applyCzineItemFilter(img, item.brightness ?? 100, item.contrast ?? 100);
+    const img    = box.querySelector('img');
+    const item   = S.czineLayout[parseInt(box.dataset.idx)];
+    if (!img || !item) return;
+    const subIdx = box.dataset.subIdx !== undefined ? parseInt(box.dataset.subIdx) : -1;
+    const src    = (subIdx >= 0 && item.images) ? item.images[subIdx] : item;
+    applyCzineItemFilter(img, src.brightness ?? 100, src.contrast ?? 100);
   });
 }
 
@@ -1494,6 +1583,7 @@ function selectCzineItem(absIdx) {
   document.querySelectorAll('#czine-spread-canvas .drag-item').forEach(b =>
     b.classList.toggle('drag-selected', parseInt(b.dataset.idx) === absIdx));
   const item = S.czineLayout[absIdx];
+  if (item.images && item.images.length > 1) return;  // no adj bar for multi-image slots
   const bar  = document.getElementById('czine-pg-adj-bar');
   bar.classList.remove('hidden');
   const bEl  = document.getElementById('czine-pg-brightness');
@@ -1502,6 +1592,57 @@ function selectCzineItem(absIdx) {
   cEl.value  = item.contrast   ?? 100;
   document.getElementById('czine-pg-brightness-val').textContent = bEl.value;
   document.getElementById('czine-pg-contrast-val').textContent   = cEl.value;
+}
+
+function renderSlotItem(canvas, absIdx) {
+  const item = S.czineLayout[absIdx];
+  if (!item || item.white || !item.url) return;
+
+  const subList = item.images && item.images.length > 0 ? item.images : null;
+
+  if (subList) {
+    // Multi-image slot: render each sub-image; no drag handles (MISC layout)
+    subList.forEach((sub, si) => {
+      if (!sub.url) return;
+      const box = document.createElement('div');
+      box.className = 'drag-item';
+      box.dataset.idx = absIdx;
+      box.dataset.subIdx = si;
+      box.style.left      = sub.x + 'px';
+      box.style.top       = sub.y + 'px';
+      box.style.width     = sub.w + 'px';
+      box.style.height    = sub.h + 'px';
+      box.style.transform = `rotate(${sub.rot || 0}deg)`;
+      const img = document.createElement('img');
+      img.src = `/img/${sub.url}`;
+      img.draggable = false;
+      applyCzineItemFilter(img, sub.brightness ?? 100, sub.contrast ?? 100);
+      box.appendChild(img);
+      canvas.appendChild(box);
+    });
+  } else {
+    const box = document.createElement('div');
+    box.className = 'drag-item';
+    box.dataset.idx = absIdx;
+    box.style.left      = item.x + 'px';
+    box.style.top       = item.y + 'px';
+    box.style.width     = item.w + 'px';
+    box.style.height    = item.h + 'px';
+    box.style.transform = `rotate(${item.rot}deg)`;
+    const img = document.createElement('img');
+    img.src       = `/img/${item.url}`;
+    img.draggable = false;
+    applyCzineItemFilter(img, item.brightness, item.contrast);
+    box.appendChild(img);
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    box.appendChild(handle);
+    const rotHandle = document.createElement('div');
+    rotHandle.className = 'rotate-handle';
+    box.appendChild(rotHandle);
+    makeDraggable(box, handle, rotHandle, 1, () => selectCzineItem(absIdx), S.czineLayout);
+    canvas.appendChild(box);
+  }
 }
 
 function renderCzineSpread(spreadIdx) {
@@ -1520,35 +1661,7 @@ function renderCzineSpread(spreadIdx) {
   [0, 1].forEach(slot => {
     const absIdx = startIdx + slot;
     if (absIdx >= S.czineLayout.length) return;
-    const item = S.czineLayout[absIdx];
-
-    if (item.white || !item.url) return;  // mandatory white page — canvas background shows through
-
-    const box = document.createElement('div');
-    box.className = 'drag-item';
-    box.dataset.idx = absIdx;
-    box.style.left      = item.x + 'px';
-    box.style.top       = item.y + 'px';
-    box.style.width     = item.w + 'px';
-    box.style.height    = item.h + 'px';
-    box.style.transform = `rotate(${item.rot}deg)`;
-
-    const img = document.createElement('img');
-    img.src       = `/img/${item.url}`;
-    img.draggable = false;
-    applyCzineItemFilter(img, item.brightness, item.contrast);
-    box.appendChild(img);
-
-    const handle = document.createElement('div');
-    handle.className = 'resize-handle';
-    box.appendChild(handle);
-
-    const rotHandle = document.createElement('div');
-    rotHandle.className = 'rotate-handle';
-    box.appendChild(rotHandle);
-
-    makeDraggable(box, handle, rotHandle, 1, () => selectCzineItem(absIdx), S.czineLayout);
-    canvas.appendChild(box);
+    renderSlotItem(canvas, absIdx);
   });
 
   // Page numbers — skip cover (first) and back cover (last) spread
@@ -1690,6 +1803,8 @@ function updateCzineTextItem(spreadIdx, side) {
   if (!ti.text) return;
   const box = document.createElement('div');
   box.className = 'czine-text-item';
+  if (spreadIdx === 0 && side === 'right') box.classList.add('text-justify');
+  if (spreadIdx === 0 && side === 'left')  box.classList.add('text-bold');
   box.dataset.side   = side;
   box.dataset.spread = spreadIdx;
   box.style.left  = ti.x + 'px';
@@ -1718,6 +1833,7 @@ async function saveCzine() {
       icon:        S.czineIcon || null,
       globalScale: S.czineGlobalScale,
       coverScale:  S.czineCoverScale,
+      M:           S.czineM || 1,
     });
     if (res.ok) {
       S.zines = await GET('/api/zines');
@@ -1944,20 +2060,32 @@ function init() {
   });
   document.getElementById('czine-back-btn').addEventListener('click', () => {
     showCzineStep(1);
-    // Rebuild series pills (may be empty when coming from openZineEditModal)
     const seriesSet = [...new Set(S.images.map(i => i.series).filter(Boolean))].sort();
-    const pillsEl = document.getElementById('czine-pills-series');
+    const pillsEl   = document.getElementById('czine-pills-series');
+    const isMisc    = S.czineSeries === 'MISC';
     pillsEl.innerHTML = seriesSet.map(s =>
-      `<button class="pill${s === S.czineSeries ? ' active' : ''}" data-czs="${s}">${s}</button>`
-    ).join('');
+      `<button class="pill${s === S.czineSeries && !isMisc ? ' active' : ''}" data-czs="${s}">${s}</button>`
+    ).join('') + `<button class="pill${isMisc ? ' active' : ''}" data-czs="__misc__">MISC</button>`;
+    document.getElementById('czine-misc-row').classList.toggle('hidden', !isMisc);
+    document.getElementById('czine-misc-m-row').classList.toggle('hidden', !isMisc);
+
+    const activateSeries = (czs) => {
+      pillsEl.querySelectorAll('[data-czs]').forEach(b => b.classList.remove('active'));
+      pillsEl.querySelector(`[data-czs="${czs}"]`)?.classList.add('active');
+      const m = czs === '__misc__';
+      S.czineMiscMode = m;
+      document.getElementById('czine-misc-row').classList.toggle('hidden', !m);
+      document.getElementById('czine-misc-m-row').classList.toggle('hidden', !m);
+      if (!m) loadCzineImages(czs);
+      else {
+        document.getElementById('czine-images-section').classList.add('hidden');
+        document.getElementById('czine-preview-btn').disabled = false;
+      }
+    };
     pillsEl.querySelectorAll('[data-czs]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        pillsEl.querySelectorAll('[data-czs]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        loadCzineImages(btn.dataset.czs);
-      });
+      btn.addEventListener('click', () => activateSeries(btn.dataset.czs));
     });
-    if (S.czineSeries) loadCzineImages(S.czineSeries);
+    if (S.czineSeries && !isMisc) loadCzineImages(S.czineSeries);
   });
   document.getElementById('czine-save-btn').addEventListener('click', saveCzine);
 
@@ -2065,6 +2193,24 @@ function init() {
     tile.dataset.contrast = e.target.value;
     document.getElementById('czine-adj-contrast-val').textContent = e.target.value;
     applyCzineFilter(tile.querySelector('img'), tile);
+  });
+
+  // MISC N pills
+  document.querySelectorAll('#czine-misc-n-pills [data-czn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#czine-misc-n-pills [data-czn]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      S.czineMiscN = btn.dataset.czn;
+      document.getElementById('czine-misc-n-input').classList.toggle('hidden', btn.dataset.czn !== 'n');
+    });
+  });
+  document.getElementById('czine-misc-n-input').addEventListener('change', e => {
+    S.czineMiscNVal = Math.max(1, parseInt(e.target.value) || 1);
+    e.target.value  = S.czineMiscNVal;
+  });
+  document.getElementById('czine-misc-m-input').addEventListener('change', e => {
+    S.czineM = Math.max(1, parseInt(e.target.value) || 1);
+    e.target.value = S.czineM;
   });
 
   document.getElementById('czine-select-all').addEventListener('click', () => {

@@ -686,6 +686,7 @@ def api_zines():
             "icon":        meta.get("icon"),
             "globalScale": meta.get("globalScale", 100),
             "coverScale":  meta.get("coverScale",  100),
+            "M":           meta.get("M", 1),
             "size_bytes": stat.st_size,
             "modified":   datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds"),
         })
@@ -711,18 +712,22 @@ def api_zine_create():
         return jsonify({"error": "no series"}), 400
 
     # White-page items have null path; require at least one real image
-    if not any(it.get("path") for it in layout):
+    def _has_real_img(it):
+        return bool((it.get("images") and any(s.get("path") for s in it["images"])) or it.get("path"))
+    if not any(_has_real_img(it) for it in layout):
         return jsonify({"error": "no images in layout"}), 400
 
     data_root_str = str(DATA_ROOT.resolve())
     for item in layout:
-        if not item.get("path"):
-            continue  # mandatory white page — no file to validate
-        p = (DATA_ROOT / item["path"]).resolve()
-        if not str(p).startswith(data_root_str):
-            return jsonify({"error": "invalid path"}), 400
-        if not p.exists():
-            return jsonify({"error": f"not found: {item['path']}"}), 400
+        paths_to_check = [sub["path"] for sub in item.get("images", []) if sub.get("path")]
+        if item.get("path") and not item.get("images"):
+            paths_to_check.append(item["path"])
+        for rel_path in paths_to_check:
+            p = (DATA_ROOT / rel_path).resolve()
+            if not str(p).startswith(data_root_str):
+                return jsonify({"error": "invalid path"}), 400
+            if not p.exists():
+                return jsonify({"error": f"not found: {rel_path}"}), 400
 
     try:
         icon_path = str(ICONS_DIR / icon_name) if icon_name else None
@@ -750,10 +755,11 @@ def api_zine_create():
 
     global_scale = int(data.get("globalScale") or 100)
     cover_scale  = int(data.get("coverScale")  or 100)
+    m_val        = int(data.get("M") or 1)
     sidecar = {"series": series, "format": fmt, "lang": lang, "cover": cover_path,
                "layout": layout, "canvasW": canvas_w, "canvasH": canvas_h,
                "bw": bw, "texts": texts, "icon": icon_name,
-               "globalScale": global_scale, "coverScale": cover_scale}
+               "globalScale": global_scale, "coverScale": cover_scale, "M": m_val}
     (ZINES_DIR / f"{name}.json").write_text(json.dumps(sidecar, indent=2))
 
     stat = pdf_path.stat()
@@ -885,30 +891,44 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
         imposition.append((total_pages - 2*k + 1, 2*k - 2))   # front
         imposition.append((2*k - 1,               total_pages - 2*k))  # back
 
-    def load_img(pg):
-        if pg < 0 or pg >= n:
-            return None
-        item = layout[pg]
-        if not item.get("path"):
-            return None  # mandatory white page
-        raw = Image.open(str((DATA_ROOT / item["path"]).resolve()))
-        # Composite against white first so PIL doesn't blend against black (its
-        # default for RGBA→RGB), which would darken semi-transparent edges vs browser.
+    def _load_raw(path_str):
+        """Open image and composite against white (handles RGBA)."""
+        raw = Image.open(str((DATA_ROOT / path_str).resolve()))
         if raw.mode in ("RGBA", "LA", "P"):
             rgba = raw.convert("RGBA")
             r, g, b_ch, a = rgba.split()
             bg_white = Image.new("RGB", raw.size, (255, 255, 255))
             bg_white.paste(Image.merge("RGB", (r, g, b_ch)), mask=a)
             return bg_white
-        else:
-            return raw.convert("RGB")
+        return raw.convert("RGB")
 
-    def place_x(pg, target_right):
-        # Convert stored canvas-x (in original half) to position on target half of new spread.
-        item = layout[pg]
+    def _render_sub(sub_item, pg, target_right, spread):
+        """Render a single image placement (from item or sub-image) onto spread."""
+        path_str = sub_item.get("path")
+        if not path_str:
+            return
+        try:
+            raw = _load_raw(path_str)
+        except Exception:
+            return
         orig_right = (pg % 2 == 1)
-        local_x = item["x"] - (half_cw if orig_right else 0)
-        return round((local_x + (half_cw if target_right else 0)) * scale)
+        local_x = sub_item["x"] - (half_cw if orig_right else 0)
+        x_a = round((local_x + (half_cw if target_right else 0)) * scale)
+        y_a = max(0, round(sub_item["y"] * scale))
+        w_a = max(1, round(sub_item["w"] * scale))
+        h_a = max(1, round(sub_item["h"] * scale))
+        fitted = _fit_and_rotate(raw, w_a, h_a, float(sub_item.get("rot", 0)))
+        bval = float(sub_item.get("brightness", 100))
+        cval = float(sub_item.get("contrast",   100))
+        if bval != 100:
+            fitted = ImageEnhance.Brightness(fitted).enhance(bval / 100.0)
+        if cval != 100:
+            arr = np.array(fitted, dtype=np.float32)
+            arr = (arr - 128.0) * (cval / 100.0) + 128.0
+            fitted = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+        if bw or bool(sub_item.get("bw", False)):
+            fitted = fitted.convert("L").convert("RGB")
+        spread.paste(fitted, (x_a, y_a))
 
     writer      = PdfWriter()
     thumb_bytes = None
@@ -917,31 +937,15 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
         spread = Image.new("RGB", (spread_w, spread_h), (255, 255, 255))
 
         for target_right, pg in ((False, left_pg), (True, right_pg)):
-            img = load_img(pg)
-            if img is None:
+            if pg < 0 or pg >= n:
                 continue
             item = layout[pg]
-            x_a  = place_x(pg, target_right)
-            y_a  = round(item["y"] * scale)
-            w_a  = max(1, round(item["w"] * scale))
-            h_a  = max(1, round(item["h"] * scale))
-            # Fit first (scale to display size), then apply effects — matches browser
-            # CSS filter behaviour: filters are applied at rendering resolution, not
-            # at source resolution.  Applying contrast before downscale would clip
-            # highs/lows first and then average them back toward grey, washing out
-            # the effect; browsers clip after averaging, producing crisper contrast.
-            fitted = _fit_and_rotate(img, w_a, h_a, float(item.get("rot", 0)))
-            bval = float(item.get("brightness", 100))
-            cval = float(item.get("contrast",   100))
-            if bval != 100:
-                fitted = ImageEnhance.Brightness(fitted).enhance(bval / 100.0)
-            if cval != 100:
-                arr = np.array(fitted, dtype=np.float32)
-                arr = (arr - 128.0) * (cval / 100.0) + 128.0
-                fitted = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
-            if bw or bool(item.get("bw", False)):
-                fitted = fitted.convert("L").convert("RGB")
-            spread.paste(fitted, (x_a, y_a))
+            sub_images = item.get("images")
+            if sub_images:
+                for sub in sub_images:
+                    _render_sub(sub, pg, target_right, spread)
+            elif item.get("path"):
+                _render_sub(item, pg, target_right, spread)
 
         draw = ImageDraw.Draw(spread)
 
@@ -1068,50 +1072,43 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
             thumb_h     = round(spread_h * thumb_w / (spread_w // 2))
             page1_thumb = page1.resize((thumb_w, thumb_h), Image.LANCZOS)
 
-            # Re-render the cover image at thumbnail scale so effects (brightness/
-            # contrast) are applied at display resolution — matching how the browser
-            # applies CSS filters (after scaling, not before).  Without this, heavy
-            # contrast settings look much weaker in the thumbnail than in the canvas
-            # preview, because clipping at high-res then downsampling softens the
-            # effect compared to downsampling then clipping.
-            t_scale = thumb_w / (canvas_w // 2)   # ≈ 1.47 — thumbnail px per canvas px
-            t_pg    = right_pg                     # front cover = right side of spread 0
+            t_scale = thumb_w / (canvas_w // 2)
+            t_pg    = right_pg
             if 0 <= t_pg < n:
                 t_item = layout[t_pg]
-                if t_item.get("path"):
-                    t_raw = load_img(t_pg)         # composited against white, no effects
-                    # local-x for the right side: even pages use item["x"] directly
-                    t_lx  = t_item["x"] - (half_cw if t_pg % 2 == 1 else 0)
-                    t_x   = round(t_lx  * t_scale)
-                    t_y   = round(t_item["y"] * t_scale)
-                    t_w   = max(1, round(t_item["w"] * t_scale))
-                    t_h   = max(1, round(t_item["h"] * t_scale))
-                    # Fit image (object-fit:contain) without wrapping in a white cell —
-                    # wrapping with white would overwrite text labels that fall inside the
-                    # cell bounding box.  Instead compute the fitted size and paste only
-                    # the image content at the centred position within the cell.
-                    t_ratio = min(t_w / t_raw.width, t_h / t_raw.height)
-                    t_fw    = max(1, round(t_raw.width  * t_ratio))
-                    t_fh    = max(1, round(t_raw.height * t_ratio))
-                    t_img   = t_raw.resize((t_fw, t_fh), Image.LANCZOS)
-                    t_rot   = float(t_item.get("rot", 0))
-                    if t_rot:
-                        t_img = t_img.rotate(-t_rot, expand=False,
-                                             resample=Image.BICUBIC,
-                                             fillcolor=(255, 255, 255))
-                    t_bv  = float(t_item.get("brightness", 100))
-                    t_cv  = float(t_item.get("contrast",   100))
-                    if t_bv != 100:
-                        t_img = ImageEnhance.Brightness(t_img).enhance(t_bv / 100.0)
-                    if t_cv != 100:
-                        t_arr = np.array(t_img, dtype=np.float32)
-                        t_arr = (t_arr - 128.0) * (t_cv / 100.0) + 128.0
-                        t_img = Image.fromarray(np.clip(t_arr, 0, 255).astype(np.uint8))
-                    if bw or bool(t_item.get("bw", False)):
-                        t_img = t_img.convert("L").convert("RGB")
-                    page1_thumb.paste(t_img,
-                                      (t_x + (t_w - t_fw) // 2,
-                                       t_y + (t_h - t_fh) // 2))
+                # Use first sub-image if multi-image slot, else the item itself
+                t_src = (t_item.get("images") or [None])[0] or t_item
+                if t_src.get("path"):
+                    try:
+                        t_raw = _load_raw(t_src["path"])
+                        t_lx  = t_src["x"] - (half_cw if t_pg % 2 == 1 else 0)
+                        t_x   = round(t_lx  * t_scale)
+                        t_y   = round(t_src["y"] * t_scale)
+                        t_w   = max(1, round(t_src["w"] * t_scale))
+                        t_h   = max(1, round(t_src["h"] * t_scale))
+                        t_ratio = min(t_w / t_raw.width, t_h / t_raw.height)
+                        t_fw    = max(1, round(t_raw.width  * t_ratio))
+                        t_fh    = max(1, round(t_raw.height * t_ratio))
+                        t_img   = t_raw.resize((t_fw, t_fh), Image.LANCZOS)
+                        t_rot   = float(t_src.get("rot", 0))
+                        if t_rot:
+                            t_img = t_img.rotate(-t_rot, expand=False,
+                                                 resample=Image.BICUBIC,
+                                                 fillcolor=(255, 255, 255))
+                        t_bv = float(t_src.get("brightness", 100))
+                        t_cv = float(t_src.get("contrast",   100))
+                        if t_bv != 100:
+                            t_img = ImageEnhance.Brightness(t_img).enhance(t_bv / 100.0)
+                        if t_cv != 100:
+                            t_arr = np.array(t_img, dtype=np.float32)
+                            t_arr = (t_arr - 128.0) * (t_cv / 100.0) + 128.0
+                            t_img = Image.fromarray(np.clip(t_arr, 0, 255).astype(np.uint8))
+                        if bw or bool(t_src.get("bw", False)):
+                            t_img = t_img.convert("L").convert("RGB")
+                        page1_thumb.paste(t_img, (t_x + (t_w - t_fw) // 2,
+                                                   t_y + (t_h - t_fh) // 2))
+                    except Exception:
+                        pass
 
             tb          = io.BytesIO()
             page1_thumb.save(tb, "PNG", compress_level=6)

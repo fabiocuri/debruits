@@ -1,0 +1,6 @@
+flask>=3.0
+pillow>=10.0
+img2pdf
+pypdf>=4.0
+numpy
+gunicorn

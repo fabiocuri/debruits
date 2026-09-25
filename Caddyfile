@@ -1,0 +1,6 @@
+your-domain.com {
+    basicauth {
+        fabio HASHED_PASSWORD_HERE
+    }
+    reverse_proxy app:5000
+}

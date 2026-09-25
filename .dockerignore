@@ -1,0 +1,8 @@
+.git
+.gitignore
+.claude
+legacy
+**/__pycache__
+**/*.pyc
+**/*.md
+webapp/interests

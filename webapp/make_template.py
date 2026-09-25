@@ -7,9 +7,9 @@ or by hand). Change config.json once — every format updates automatically.
 
 Usage
 -----
-    python3 make_template.py ALGAS   postcard pt          # front + back
-    python3 make_template.py CONCHAS poster   en --side front
-    python3 make_template.py PLANTAS fanzine  pt          # numbered pages
+    python3 make_template.py ALGAS   postcard   pt          # front + back
+    python3 make_template.py CONCHAS poster     en --side front
+    python3 make_template.py PLANTAS mini-poster pt
 """
 
 import argparse

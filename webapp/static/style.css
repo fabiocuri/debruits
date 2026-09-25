@@ -511,6 +511,9 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
   padding: 5px 9px; border-radius: var(--r); width: 100%;
 }
 .txt-input:focus { outline: none; border-color: var(--border2); }
+.czine-misc-n-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.czine-misc-n-wrap .txt-input { width: 70px; }
+#czine-misc-m-input { width: 70px; }
 .back-text-select {
   background: var(--surface2); border: 1px solid var(--border);
   color: var(--txt); font-family: var(--brand); font-size: 28px;
@@ -997,7 +1000,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 }
 .czine-text-item:hover { outline: 1px dashed var(--border2); }
 .czine-text-item.text-selected { outline: 1px dashed var(--pill-on); }
-.czine-text-item.text-justify { text-align: justify; font-size: 11px; }
+.czine-text-item.text-justify { text-align: justify; }
 .czine-text-item.text-bold    { font-weight: bold; }
 
 .czine-pg-num {
