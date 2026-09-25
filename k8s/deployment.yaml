@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debruits
+  labels:
+    app: debruits
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debruits
+  template:
+    metadata:
+      labels:
+        app: debruits
+    spec:
+      containers:
+        - name: app
+          image: debruits-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /app/webapp/config.json
+              subPath: config.json
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        - name: data
+          hostPath:
+            path: /data
+            type: Directory
+        - name: config
+          configMap:
+            name: debruits-config
