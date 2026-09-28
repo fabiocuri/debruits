@@ -73,6 +73,7 @@ _cfg       = _boot_cfg()
 DATA_ROOT  = Path(os.environ.get("DATA_ROOT") or _cfg.get("data_root", ROOT.parent.parent))
 TMPL_DIR   = DATA_ROOT / "Templates"
 FINAL_DIR  = DATA_ROOT / "Final"
+COVER_DIR  = DATA_ROOT / "Cover"
 ICONS_DIR  = ROOT.parent / "icons"
 ZINES_DIR  = DATA_ROOT / "Zines"
 
@@ -188,6 +189,19 @@ def api_icons():
     return jsonify([
         {"name": p.name, "url": f"icon/{p.name}"}
         for p in sorted(ICONS_DIR.glob("*.png"))
+    ])
+
+
+@app.route("/api/covers/<series>")
+def api_covers(series):
+    folder = COVER_DIR / series.upper()
+    if not folder.exists():
+        return jsonify([])
+    exts = {".png", ".jpg", ".jpeg", ".webp"}
+    return jsonify([
+        {"path": str(p.relative_to(DATA_ROOT))}
+        for p in sorted(folder.iterdir())
+        if p.suffix.lower() in exts
     ])
 
 

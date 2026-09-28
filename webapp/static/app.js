@@ -1309,11 +1309,12 @@ function renderCzineGrid(items) {
   document.getElementById('czine-preview-btn').disabled = false;
 }
 
-function renderCzineCoverGrid(items) {
+function renderCzineCoverGrid(paths) {
   const coverEl = document.getElementById('czine-cover-grid');
-  coverEl.innerHTML = items.map(img => `
-    <div class="czine-cover-tile${S.czineCoverPath === img.path ? ' active' : ''}" data-path="${img.path}">
-      <img src="/img/${img.path}" loading="lazy" alt="">
+  if (!paths.length) { coverEl.innerHTML = ''; return; }
+  coverEl.innerHTML = paths.map(p => `
+    <div class="czine-cover-tile${S.czineCoverPath === p ? ' active' : ''}" data-path="${p}">
+      <img src="/img/${p}" loading="lazy" alt="">
     </div>`).join('');
   coverEl.querySelectorAll('.czine-cover-tile').forEach(tile => {
     tile.addEventListener('click', () => {
@@ -1325,11 +1326,17 @@ function renderCzineCoverGrid(items) {
   });
 }
 
+function fetchAndRenderCovers(series) {
+  GET(`/api/covers/${encodeURIComponent(series)}`)
+    .then(items => renderCzineCoverGrid(items.map(i => i.path)))
+    .catch(() => renderCzineCoverGrid([]));
+}
+
 function loadCzineImages(series) {
   const items = S.images.filter(i => i.series === series)
                         .slice().sort((a, b) => a.index - b.index);
   renderCzineGrid(items);
-  renderCzineCoverGrid(items);
+  fetchAndRenderCovers(series);
 }
 
 function loadCzineMiscImages() {
@@ -1348,9 +1355,7 @@ function loadCzineMiscImages() {
   }
   S.czineCoverPath = null;
   renderCzineGrid(items);
-  const allCoverItems = [...new Set(S.images.map(i => i.series).filter(Boolean))].sort()
-    .flatMap(ser => S.images.filter(i => i.series === ser).slice().sort((a, b) => a.index - b.index));
-  renderCzineCoverGrid(allCoverItems);
+  fetchAndRenderCovers('MISC');
 }
 
 // ── Czine step helpers ────────────────────────────────────────────────────────
