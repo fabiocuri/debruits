@@ -10,6 +10,7 @@ Usage:
 
 import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -69,7 +70,7 @@ def _boot_cfg() -> dict:
         return {}
 
 _cfg       = _boot_cfg()
-DATA_ROOT  = Path(_cfg.get("data_root", ROOT.parent.parent))
+DATA_ROOT  = Path(os.environ.get("DATA_ROOT") or _cfg.get("data_root", ROOT.parent.parent))
 TMPL_DIR   = DATA_ROOT / "Templates"
 FINAL_DIR  = DATA_ROOT / "Final"
 ICONS_DIR  = ROOT.parent / "icons"

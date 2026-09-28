@@ -20,12 +20,12 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 5000
+          env:
+            - name: DATA_ROOT
+              value: /data
           volumeMounts:
             - name: data
               mountPath: /data
-            - name: config
-              mountPath: /app/webapp/config.json
-              subPath: config.json
           resources:
             requests:
               memory: "256Mi"
@@ -38,6 +38,3 @@ spec:
           hostPath:
             path: /data
             type: Directory
-        - name: config
-          configMap:
-            name: debruits-config
