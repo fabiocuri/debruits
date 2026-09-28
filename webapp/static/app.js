@@ -1211,7 +1211,6 @@ function openCzineModal() {
   document.getElementById('czine-adj-bar').classList.add('hidden');
   document.getElementById('czine-misc-row').classList.add('hidden');
   document.getElementById('czine-misc-m-row').classList.add('hidden');
-  document.getElementById('czine-misc-reshuffle').classList.add('hidden');
   S.czineEditName   = null;
   S.czineBw         = false;
   S.czineMiscMode   = false;
@@ -1241,7 +1240,8 @@ function openCzineModal() {
     document.getElementById('czine-misc-row').classList.toggle('hidden', !isMisc);
     document.getElementById('czine-misc-m-row').classList.toggle('hidden', !isMisc);
     if (isMisc) {
-      loadCzineMiscImages();
+      document.getElementById('czine-images-section').classList.add('hidden');
+      document.getElementById('czine-preview-btn').disabled = true;
     } else {
       loadCzineImages(czs);
     }
@@ -1330,7 +1330,6 @@ function renderCzineGrid(items) {
 function loadCzineImages(series) {
   const items = S.images.filter(i => i.series === series)
                         .slice().sort((a, b) => a.index - b.index);
-  document.getElementById('czine-misc-reshuffle').classList.add('hidden');
   renderCzineGrid(items);
 }
 
@@ -1341,14 +1340,14 @@ function loadCzineMiscImages() {
   let items = [];
   allSeries.forEach(ser => {
     const imgs = S.images.filter(i => i.series === ser).slice().sort((a, b) => a.index - b.index);
-    items.push(...(nMode === 'all' ? imgs : imgs.slice(0, nVal)));
+    const pool = nMode === 'all' ? [...imgs] : [...imgs].sort(() => Math.random() - 0.5).slice(0, nVal);
+    items.push(...pool);
   });
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [items[i], items[j]] = [items[j], items[i]];
   }
   S.czineCoverPath = null;
-  document.getElementById('czine-misc-reshuffle').classList.remove('hidden');
   renderCzineGrid(items);
 }
 
@@ -2238,7 +2237,7 @@ function init() {
       cb.closest('.czine-img-tile').classList.add('czine-excluded');
     });
   });
-  document.getElementById('czine-misc-reshuffle').addEventListener('click', loadCzineMiscImages);
+  document.getElementById('czine-misc-update').addEventListener('click', loadCzineMiscImages);
 
   // Shared Back Description modal wiring (opened by either panel's Back Description button)
   document.getElementById('desc-close').addEventListener('click', closeDescModal);
