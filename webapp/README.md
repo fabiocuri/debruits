@@ -105,9 +105,7 @@ webapp/
 ├── app.py                     Flask server
 ├── make_template.py           Template generator (Pillow)
 ├── config.json                Layout, formats, series titles, paths
-├── Debruits-Regular.ttf       Custom typeface (layout elements)
-├── DebruitsRegular-Handwritten.ttf  Custom typeface (text labels)
-├── Debruits-Extended.ttf      Custom typeface (extended)
+├── DebruitsRegular-Handwritten.ttf  Custom typeface (all text rendering)
 ├── thumbnails.json            Per-theme cover image overrides
 ├── static/
 │   ├── index.html
