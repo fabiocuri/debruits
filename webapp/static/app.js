@@ -1288,6 +1288,7 @@ function renderCzineGrid(items) {
       <label class="czine-img-check">
         <input type="checkbox" checked data-path="${img.path}">
       </label>
+      <button class="czine-change-btn" title="Swap for another photo from same theme">↺</button>
       <img src="/img/${img.path}" loading="lazy" alt="${img.series || ''}">
       <div class="czine-img-num">${i + 1}</div>
     </div>`).join('');
@@ -1297,12 +1298,26 @@ function renderCzineGrid(items) {
     tile.addEventListener('click', e => {
       if (e.target.tagName === 'INPUT') return;
       if (e.target.tagName === 'LABEL') return;
+      if (e.target.classList.contains('czine-change-btn')) return;
       selectCzineTile(tile);
     });
     cb.addEventListener('change', () => {
       tile.classList.toggle('czine-excluded', !cb.checked);
     });
     cb.addEventListener('click', e => e.stopPropagation());
+    tile.querySelector('.czine-change-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      const currentPath = tile.dataset.path;
+      const series = S.images.find(i => i.path === currentPath)?.series;
+      if (!series) return;
+      const inGrid = new Set([...gridEl.querySelectorAll('.czine-img-tile')].map(t => t.dataset.path));
+      const pool = S.images.filter(i => i.series === series && !inGrid.has(i.path));
+      if (!pool.length) return;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      tile.dataset.path = pick.path;
+      cb.dataset.path   = pick.path;
+      tile.querySelector('img').src = `/img/${pick.path}`;
+    });
   });
 
   document.getElementById('czine-images-section').classList.remove('hidden');

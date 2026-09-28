@@ -896,6 +896,15 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 }
 .czine-img-tile.czine-excluded { opacity: .35; border-color: var(--border2); }
 .czine-img-tile.czine-cover-active { outline: 3px solid #000; }
+.czine-change-btn {
+  position: absolute; top: 5px; right: 5px; z-index: 5;
+  background: rgba(0,0,0,.45); color: rgba(255,255,255,.85);
+  border: none; border-radius: 3px;
+  font-size: 14px; line-height: 1;
+  padding: 2px 5px; cursor: pointer;
+  transition: background .12s;
+}
+.czine-change-btn:hover { background: rgba(0,0,0,.8); }
 .czine-cover-row-label { margin-top: 12px; }
 .czine-cover-grid {
   display: flex; flex-wrap: wrap; gap: 6px;
