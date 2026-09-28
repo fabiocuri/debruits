@@ -896,16 +896,20 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 }
 .czine-img-tile.czine-excluded { opacity: .35; border-color: var(--border2); }
 .czine-img-tile.czine-cover-active { outline: 3px solid #000; }
-.czine-cover-btn {
-  position: absolute; top: 5px; right: 5px; z-index: 5;
-  background: rgba(0,0,0,.45); color: rgba(255,255,255,.7);
-  border: none; border-radius: 3px;
-  font-size: 11px; font-family: var(--brand); letter-spacing: .06em;
-  padding: 2px 5px; cursor: pointer;
-  transition: background .12s, color .12s;
+.czine-cover-row-label { margin-top: 12px; }
+.czine-cover-grid {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 14px;
 }
-.czine-cover-btn:hover { background: rgba(0,0,0,.75); color: #fff; }
-.czine-cover-active .czine-cover-btn { background: #000; color: #fff; }
+.czine-cover-tile {
+  width: 64px; aspect-ratio: 1 / 1.414;
+  cursor: pointer; border: 2px solid var(--border);
+  border-radius: 3px; overflow: hidden;
+  transition: border-color .12s;
+}
+.czine-cover-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.czine-cover-tile.active { border: 3px solid #000; }
+.czine-cover-tile:hover { border-color: #888; }
 .czine-img-check {
   position: absolute; top: 5px; left: 5px; z-index: 4;
   pointer-events: auto; cursor: pointer;

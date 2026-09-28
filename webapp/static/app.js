@@ -1288,49 +1288,48 @@ function renderCzineGrid(items) {
       <label class="czine-img-check">
         <input type="checkbox" checked data-path="${img.path}">
       </label>
-      <button class="czine-cover-btn" title="Set as fanzine cover">COVER</button>
       <img src="/img/${img.path}" loading="lazy" alt="${img.series || ''}">
       <div class="czine-img-num">${i + 1}</div>
     </div>`).join('');
-
-  if (prevCover) {
-    const prevTile = gridEl.querySelector(`.czine-img-tile[data-path="${CSS.escape(prevCover)}"]`);
-    if (prevTile) prevTile.classList.add('czine-cover-active');
-  }
 
   gridEl.querySelectorAll('.czine-img-tile').forEach(tile => {
     const cb = tile.querySelector('input');
     tile.addEventListener('click', e => {
       if (e.target.tagName === 'INPUT') return;
       if (e.target.tagName === 'LABEL') return;
-      if (e.target.classList.contains('czine-cover-btn')) return;
       selectCzineTile(tile);
     });
     cb.addEventListener('change', () => {
       tile.classList.toggle('czine-excluded', !cb.checked);
     });
     cb.addEventListener('click', e => e.stopPropagation());
-    tile.querySelector('.czine-cover-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      const isActive = tile.classList.contains('czine-cover-active');
-      gridEl.querySelectorAll('.czine-cover-active').forEach(t => t.classList.remove('czine-cover-active'));
-      if (!isActive) {
-        tile.classList.add('czine-cover-active');
-        S.czineCoverPath = tile.dataset.path;
-      } else {
-        S.czineCoverPath = null;
-      }
-    });
   });
 
   document.getElementById('czine-images-section').classList.remove('hidden');
   document.getElementById('czine-preview-btn').disabled = false;
 }
 
+function renderCzineCoverGrid(items) {
+  const coverEl = document.getElementById('czine-cover-grid');
+  coverEl.innerHTML = items.map(img => `
+    <div class="czine-cover-tile${S.czineCoverPath === img.path ? ' active' : ''}" data-path="${img.path}">
+      <img src="/img/${img.path}" loading="lazy" alt="">
+    </div>`).join('');
+  coverEl.querySelectorAll('.czine-cover-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      const already = tile.classList.contains('active');
+      coverEl.querySelectorAll('.czine-cover-tile').forEach(t => t.classList.remove('active'));
+      S.czineCoverPath = already ? null : tile.dataset.path;
+      if (!already) tile.classList.add('active');
+    });
+  });
+}
+
 function loadCzineImages(series) {
   const items = S.images.filter(i => i.series === series)
                         .slice().sort((a, b) => a.index - b.index);
   renderCzineGrid(items);
+  renderCzineCoverGrid(items);
 }
 
 function loadCzineMiscImages() {
@@ -1349,6 +1348,9 @@ function loadCzineMiscImages() {
   }
   S.czineCoverPath = null;
   renderCzineGrid(items);
+  const allCoverItems = [...new Set(S.images.map(i => i.series).filter(Boolean))].sort()
+    .flatMap(ser => S.images.filter(i => i.series === ser).slice().sort((a, b) => a.index - b.index));
+  renderCzineCoverGrid(allCoverItems);
 }
 
 // ── Czine step helpers ────────────────────────────────────────────────────────
@@ -1530,8 +1532,6 @@ function openCzinePreview() {
       return;
     }
     S.czineSeries = 'MISC';
-    const coverTile = document.querySelector('#czine-image-grid .czine-cover-active');
-    S.czineCoverPath = coverTile ? coverTile.dataset.path : null;
     S.czineM = M;
   } else {
     M = 1;
@@ -1550,10 +1550,8 @@ function openCzinePreview() {
       document.getElementById('czine-status').textContent = 'No images selected.';
       return;
     }
-    S.czineSeries    = series;
-    const coverTile  = document.querySelector('#czine-image-grid .czine-cover-active');
-    S.czineCoverPath = coverTile ? coverTile.dataset.path : null;
-    S.czineM         = 1;
+    S.czineSeries = series;
+    S.czineM      = 1;
   }
 
   S.czineSpread      = 0;
