@@ -2126,12 +2126,23 @@ function init() {
     document.getElementById('czine-scale-val').textContent = newScale + '%';
     S.czineLayout.forEach((item, idx) => {
       if (idx === 0 && S.czineCoverPath) return;  // cover has its own slider
-      const cx = item.x + item.w / 2;
-      const cy = item.y + item.h / 2;
-      item.w = Math.max(10, Math.round(item.w * factor));
-      item.h = Math.max(10, Math.round(item.h * factor));
-      item.x = Math.round(cx - item.w / 2);
-      item.y = Math.round(cy - item.h / 2);
+      if (item.images && item.images.length > 0) {
+        item.images.forEach(sub => {
+          const cx = sub.x + sub.w / 2;
+          const cy = sub.y + sub.h / 2;
+          sub.w = Math.max(10, Math.round(sub.w * factor));
+          sub.h = Math.max(10, Math.round(sub.h * factor));
+          sub.x = Math.round(cx - sub.w / 2);
+          sub.y = Math.round(cy - sub.h / 2);
+        });
+      } else {
+        const cx = item.x + item.w / 2;
+        const cy = item.y + item.h / 2;
+        item.w = Math.max(10, Math.round(item.w * factor));
+        item.h = Math.max(10, Math.round(item.h * factor));
+        item.x = Math.round(cx - item.w / 2);
+        item.y = Math.round(cy - item.h / 2);
+      }
     });
     S.czineGlobalScale = newScale;
     renderCzineSpread(S.czineSpread);
