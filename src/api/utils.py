@@ -9,7 +9,7 @@ import img2pdf
 from flask import send_file
 from PIL import Image
 
-from .paths import CFG_PATH, DATA_ROOT, SRC_DIR, ICONS_DIR, THUMBS_PATH
+from .paths import _CFG_SEED, CFG_PATH, DATA_ROOT, SRC_DIR, THUMBS_PATH
 
 _LANG_TO_DIR = {"pt": "PORTUGUES", "en": "ENGLISH", "es": "ESPANOL", "fr": "FRANCAIS"}
 _DIR_TO_LANG = {v: k for k, v in _LANG_TO_DIR.items()}
@@ -43,6 +43,10 @@ def auto_split_title(title: str) -> str:
 # ── Config ─────────────────────────────────────────────────────────────────────
 
 def load_cfg() -> dict:
+    if not CFG_PATH.exists() and _CFG_SEED.exists():
+        import shutil
+        CFG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(_CFG_SEED, CFG_PATH)
     with open(CFG_PATH) as f:
         return json.load(f)
 
@@ -135,11 +139,7 @@ def parse_template(path: Path) -> dict | None:
 
 def safe_send(path: Path):
     resolved = path.resolve()
-    allowed = {
-        str(SRC_DIR.resolve()),
-        str(DATA_ROOT.resolve()),
-        str(ICONS_DIR.resolve()),
-    }
+    allowed = {str(SRC_DIR.resolve()), str(DATA_ROOT.resolve())}
     if not any(str(resolved).startswith(a) for a in allowed):
         return "Forbidden", 403
     if not resolved.exists():

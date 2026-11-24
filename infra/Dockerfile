@@ -7,7 +7,6 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY icons/ /app/icons/
 COPY src/   /app/src/
 
 WORKDIR /app/src

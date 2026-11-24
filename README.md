@@ -35,7 +35,7 @@ debruits/
 │   │       └── zines.py         /api/zines, /api/zine/create … + PDF imposition
 │   ├── static/                  index.html · app.js · style.css
 │   ├── fonts/                   DebruitsRegular-Handwritten.ttf
-│   ├── config.json              Layout, formats, series titles
+│   ├── config.json              Default config (seed — copied to data/ on first run)
 │   └── thumbnails.json          Series thumbnails (runtime, gitignored)
 │
 ├── infra/
@@ -51,9 +51,10 @@ debruits/
 │   ├── Series/                  Source images  e.g. Series/ALGAS/
 │   ├── Cover/                   Cover photos   e.g. Cover/ALGAS/
 │   ├── Templates/               Saved print PDFs + sidecars
-│   └── Zines/                   Saved zine PDFs + sidecars
+│   ├── Zines/                   Saved zine PDFs + sidecars
+│   ├── icons/                   Stamp icon PNGs (PNG with transparency)
+│   └── config.json              Live config — auto-seeded from src/config.json
 │
-├── icons/                       Stamp icon PNGs (baked into image, gitignored)
 ├── legacy/                      Archived GAN experiments, Vue prototype, old webapp
 ├── pyproject.toml
 └── uv.lock
@@ -118,7 +119,7 @@ DATA_ROOT=../data uv run python -m api.compositor CONCHAS poster en --side back
 
 ## Configuration
 
-Edit `src/config.json`:
+The live config is `data/config.json`. On first run the app seeds it from `src/config.json` (the default shipped in the image) if it doesn't exist yet.
 
 | Key | Description |
 |-----|-------------|
@@ -136,6 +137,8 @@ Edit `src/config.json`:
 
 ```
 data/
+├── config.json                          ← live config (seeded from src/config.json)
+├── icons/                               ← stamp icon PNGs (PNG with transparency)
 ├── Series/ALGAS/ALGAS_01_upscaled.png   ← source images per series
 ├── Cover/ALGAS/cover.jpg                ← cover photos per series
 ├── Templates/POSTCARD/PORTUGUES/        ← saved prints (auto-created)
@@ -144,8 +147,6 @@ data/
 │   └── ALGAS_thumb.png
 └── Zines/ALGAS_20250101_120000.pdf      ← saved zines (auto-created)
 ```
-
-Stamp icons (PNG with transparency) go under `icons/`.
 
 ---
 
