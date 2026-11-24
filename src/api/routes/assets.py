@@ -5,10 +5,15 @@ import zipfile
 
 from flask import Blueprint, jsonify, send_file
 
-from ..paths import DATA_ROOT, FONTS_DIR, ICONS_DIR, TMPL_DIR
+from ..paths import DATA_ROOT, FONTS_DIR, ICONS_DIR, STATIC_DIR, TMPL_DIR
 from ..utils import png_to_pdf_bytes, safe_send
 
 bp = Blueprint("assets", __name__)
+
+
+@bp.route("/static/<path:filename>")
+def serve_static(filename):
+    return safe_send(STATIC_DIR / filename)
 
 
 @bp.route("/img/<path:fp>")
