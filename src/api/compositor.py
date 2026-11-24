@@ -332,8 +332,7 @@ def build_back(series: str, lang: str, size_px: tuple, title: str | None = None,
     title_font = load_font(max(10, round(L["title_size"] * H)))
     _tdraw     = draw.multiline_text if "\n" in title else draw.text
     _tdraw((round(L["title_x"] * W), round(L["title_y"] * H)),
-           title, font=title_font, fill=(0, 0, 0, 255),
-           stroke_width=2, stroke_fill=(0, 0, 0, 255))
+           title, font=title_font, fill=(0, 0, 0, 255))
 
     if footer_text:
         footer_font_size = max(10, round(L["title_size"] * H * 0.85))
