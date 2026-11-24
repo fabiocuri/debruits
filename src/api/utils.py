@@ -70,7 +70,7 @@ def normalize_titles(cfg: dict) -> dict:
 def flatten_titles(raw_titles: dict) -> dict:
     """Collapse series_titles lists to a single string per lang."""
     return {
-        s: {l: (v[0] if isinstance(v, list) else v) for l, v in langs.items()}
+        s: {lang: (v[0] if isinstance(v, list) else v) for lang, v in langs.items()}
         for s, langs in raw_titles.items()
     }
 

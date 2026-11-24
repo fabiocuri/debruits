@@ -13,7 +13,13 @@ from pypdf import PdfReader, PdfWriter
 
 from .. import compositor as _mt
 from ..paths import DATA_ROOT, FONTS_DIR, ICONS_DIR, STAMP_EXTRA_BOTTOM, ZINES_DIR
-from ..utils import auto_split_title, fit_and_rotate, fit_and_rotate_rgba, flatten_titles, load_cfg
+from ..utils import (
+    auto_split_title,
+    fit_and_rotate,
+    fit_and_rotate_rgba,
+    flatten_titles,
+    load_cfg,
+)
 
 bp = Blueprint("zines", __name__)
 
@@ -155,11 +161,12 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
                 for para in txt.split("\n\n"):
                     para = para.strip()
                     if not para:
-                        cy += lh; continue
+                        cy += lh
+                        continue
                     words = para.split()
                     lines, line = [], []
                     for word in words:
-                        test = " ".join(line + [word])
+                        test = " ".join([*line, word])
                         try:
                             w = draw.textlength(test, font=desc_font)
                         except Exception:
@@ -167,7 +174,8 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
                         if w <= box_w or not line:
                             line.append(word)
                         else:
-                            lines.append(line); line = [word]
+                            lines.append(line)
+                            line = [word]
                     if line:
                         lines.append(line)
                     for li, ln in enumerate(lines):

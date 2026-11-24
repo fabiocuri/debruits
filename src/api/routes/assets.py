@@ -2,9 +2,8 @@
 
 import io
 import zipfile
-from pathlib import Path
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, send_file
 
 from ..paths import DATA_ROOT, FONTS_DIR, ICONS_DIR, TMPL_DIR
 from ..utils import png_to_pdf_bytes, safe_send

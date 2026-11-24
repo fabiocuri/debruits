@@ -99,7 +99,7 @@ def load_font(size_px: int):
 
 
 def place_stamp(canvas: Image.Image, W: int, H: int,
-                color=(0, 0, 0, 255), icon_path: str = None, icon_scale: float = 1.0,
+                color=(0, 0, 0, 255), icon_path: str | None = None, icon_scale: float = 1.0,
                 extra_bottom: float = 0.08) -> None:
     """Draw icon stamp in bottom-right corner.
     extra_bottom: fraction of H kept clear below the icon for manual stamping."""
@@ -121,7 +121,7 @@ def place_stamp(canvas: Image.Image, W: int, H: int,
 
 # ── Builders ───────────────────────────────────────────────────────────────────
 
-def build_front(series: str, size_px: tuple, icon_path: str = None,
+def build_front(series: str, size_px: tuple, icon_path: str | None = None,
                 icon_scale: float = 1.0) -> Image.Image:
     W, H = size_px
     L    = LAYOUT
@@ -157,8 +157,8 @@ def build_front(series: str, size_px: tuple, icon_path: str = None,
 
 
 def build_front_scattered(series: str, size_px: tuple, count: int,
-                          icon_path: str = None, icon_scale: float = 1.0,
-                          forced_path: str = None):
+                          icon_path: str | None = None, icon_scale: float = 1.0,
+                          forced_path: str | None = None):
     """Return (image, layout) where layout is [{path, x, y, w, h}, ...]."""
     W, H     = size_px
     L        = LAYOUT
@@ -258,7 +258,7 @@ def apply_bc(img: Image.Image, brightness: float, contrast: float,
     return rgb
 
 
-def compose_layout(placements: list, size_px: tuple, icon_path: str = None,
+def compose_layout(placements: list, size_px: tuple, icon_path: str | None = None,
                    icon_scale: float = 1.0) -> Image.Image:
     """Re-composite a front image from dragged placements."""
     W, H   = size_px
@@ -277,7 +277,8 @@ def compose_layout(placements: list, size_px: tuple, icon_path: str = None,
         cy = int(p["y"]) + int(p["h"]) // 2
         px = cx - img.width  // 2
         py = cy - img.height // 2
-        sx = max(0, -px); sy = max(0, -py)
+        sx = max(0, -px)
+        sy = max(0, -py)
         ex = min(img.width,  W - px)
         ey = min(img.height, H - py)
         if ex > sx and ey > sy:
@@ -309,8 +310,8 @@ def _wrap_text(text: str, font, max_width: int, draw: ImageDraw.ImageDraw) -> li
     return lines
 
 
-def build_back(series: str, lang: str, size_px: tuple, title: str = None,
-               footer_text: str = None) -> Image.Image:
+def build_back(series: str, lang: str, size_px: tuple, title: str | None = None,
+               footer_text: str | None = None) -> Image.Image:
     W, H = size_px
     L    = LAYOUT
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
