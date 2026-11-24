@@ -877,7 +877,7 @@ def api_zine_download(name):
     return resp
 
 def _fit_and_rotate(img, w, h, rot):
-    """Fit img into w×h (object-fit: contain), then rotate in-place (no expand)."""
+    """Fit img into wxh (object-fit: contain), then rotate in-place (no expand)."""
     ratio = min(w / img.width, h / img.height)
     fw = max(1, round(img.width  * ratio))
     fh = max(1, round(img.height * ratio))
@@ -908,8 +908,8 @@ def _fit_and_rotate_rgba(img_rgba, w, h, rot):
 
 ZINE_DPI = 300
 # Each PDF page is a two-page spread (2 pages side by side).
-# mini-poster pages are A5 → spread = A4 landscape (297 × 210 mm)
-# poster pages are A4      → spread = A3 landscape (420 × 297 mm)
+# mini-poster pages are A5 → spread = A4 landscape (297 x 210 mm)
+# poster pages are A4      → spread = A3 landscape (420 x 297 mm)
 ZINE_PAPER_SIZES = {
     'mini-poster': (297 / 25.4, 210 / 25.4),   # A4 landscape in inches
     'poster':      (420 / 25.4, 297 / 25.4),   # A3 landscape in inches

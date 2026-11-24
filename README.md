@@ -4,7 +4,7 @@ DE BRUITS is an art project combining microscopy and macro photography to produc
 
 **Author:** Fabio Curi · fcuri91@gmail.com
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system diagram and API reference.
+See [docs/architecture.md](docs/architecture.md) for the full system diagram and API reference.
 
 ---
 
@@ -21,10 +21,10 @@ minikube mount "$(pwd)/data:/data"
 
 # 3. Build the image inside minikube's Docker context
 eval $(minikube docker-env)
-docker build -t debruits-app:latest .
+docker build -f infra/Dockerfile -t debruits-app:latest .
 
 # 4. Deploy
-kubectl apply -f k8s/
+kubectl apply -f infra/k8s/
 
 # 5. Open in browser
 minikube service debruits
@@ -40,7 +40,7 @@ minikube start
 minikube mount "$(pwd)/data:/data" &
 
 # If the image is still cached, just reapply
-kubectl apply -f k8s/
+kubectl apply -f infra/k8s/
 
 minikube service debruits
 ```
@@ -49,7 +49,7 @@ minikube service debruits
 
 ```bash
 eval $(minikube docker-env)
-docker build -t debruits-app:latest .
+docker build -f infra/Dockerfile -t debruits-app:latest .
 kubectl rollout restart deployment/debruits
 ```
 
@@ -58,9 +58,9 @@ kubectl rollout restart deployment/debruits
 ## Running locally (development fallback)
 
 ```bash
-cd webapp
-pip install -r ../requirements.txt
-DATA_ROOT=../data python3 app.py
+uv sync
+cd src
+DATA_ROOT=../data uv run python -m api
 ```
 
 Open **http://localhost:5000**
@@ -71,34 +71,42 @@ Open **http://localhost:5000**
 
 ```
 debruits/
-├── webapp/               Flask app — template generation, image browser, zine editor
-│   ├── app.py            Server + all API routes
-│   ├── make_template.py  Pillow compositor (layout, back face, stamp)
-│   ├── config.json       Layout params, format sizes, series titles
+├── src/                  Flask application source
+│   ├── api/              Python package (Flask app factory + all routes)
+│   │   ├── __init__.py   create_app() factory, index route
+│   │   ├── paths.py      Centralised path constants
+│   │   ├── utils.py      Shared utilities
+│   │   ├── compositor.py Pillow compositor (layout, back face, stamp)
+│   │   └── routes/       Blueprint modules (assets, config, images, prints, zines)
 │   ├── static/           Frontend (index.html, app.js, style.css)
-│   ├── DebruitsRegular-Handwritten.ttf  Custom font (baked into Docker image)
-│   └── interests/        Optional standalone FastAPI dashboard (port 5001)
+│   ├── fonts/            DebruitsRegular-Handwritten.ttf + source
+│   ├── config.json       Layout params, format sizes, series titles
+│   └── thumbnails.json   Series overview thumbnails (runtime-generated, gitignored)
+├── infra/                Infrastructure files
+│   ├── Dockerfile        Builds app image (copies src/, icons/, config.json)
+│   ├── docker-compose.yml Compose alternative — mounts ./data as /data
+│   ├── Caddyfile         Reverse-proxy config
+│   └── k8s/
+│       ├── deployment.yaml Deployment — hostPath /data, local image
+│       └── service.yaml    NodePort service on port 30500
+├── docs/
+│   └── architecture.md   Full system diagram and API reference
 ├── data/                 Working data — mounted into k8s at /data (gitignored)
 │   ├── Series/           Source images by series (ALGAS/, CONCHAS/, …)
 │   ├── Cover/            Cover photos by series
 │   ├── Templates/        Saved print PDFs + sidecars (auto-created by app)
 │   └── Zines/            Saved zine PDFs + sidecars (auto-created by app)
 ├── icons/                Stamp icon PNGs (baked into Docker image, gitignored)
-├── k8s/
-│   ├── deployment.yaml   Deployment — hostPath /data, local image
-│   └── service.yaml      NodePort service on port 30500
 ├── legacy/               Archived GAN experiments and Vue.js prototype (not in use)
-├── ARCHITECTURE.md       Full system diagram and API reference
-├── Dockerfile            Builds app image (copies webapp/ and icons/, not data/)
-├── docker-compose.yml    Compose alternative — mounts ./data as /data
-└── requirements.txt      Python dependencies
+├── pyproject.toml        Project metadata and dependencies (uv)
+└── uv.lock               Locked dependency versions
 ```
 
 ---
 
 ## Configuration
 
-Edit `webapp/config.json`:
+Edit `src/config.json`:
 
 | Key | Description |
 |-----|-------------|
@@ -129,7 +137,7 @@ Stamp icons (PNG with transparency) go under `icons/`.
 ## CLI template generation
 
 ```bash
-cd webapp
-python3 make_template.py ALGAS postcard pt
-python3 make_template.py CONCHAS poster en --side front
+cd src
+DATA_ROOT=../data uv run python -m api.compositor ALGAS postcard pt
+DATA_ROOT=../data uv run python -m api.compositor CONCHAS poster en --side front
 ```

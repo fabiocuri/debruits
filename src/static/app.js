@@ -1,8 +1,8 @@
 'use strict';
 
 // Spread dimensions (2 pages side by side).
-// mini-poster pages are A5 → spread = A4 landscape (297 × 210 mm)
-// poster pages are A4      → spread = A3 landscape (420 × 297 mm)
+// mini-poster pages are A5 → spread = A4 landscape (297 x 210 mm)
+// poster pages are A4      → spread = A3 landscape (420 x 297 mm)
 const ZINE_FORMATS = {
   'mini-poster': { paperW: 297 / 25.4, paperH: 210 / 25.4 },  // A4 landscape
   'poster':      { paperW: 420 / 25.4, paperH: 297 / 25.4 },  // A3 landscape

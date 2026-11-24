@@ -1,31 +1,30 @@
-#!/usr/bin/env python3
 """
-make_template.py — generate DE BRUITS templates from Series/ composite images.
+compositor.py — generate DE BRUITS templates from Series/ composite images.
 
 Layout, format sizes, and text are read from config.json (edited via the UI
 or by hand). Change config.json once — every format updates automatically.
 
 Usage
 -----
-    python3 make_template.py ALGAS   postcard   pt          # front + back
-    python3 make_template.py CONCHAS poster     en --side front
-    python3 make_template.py PLANTAS mini-poster pt
+    python3 -m api.compositor ALGAS   postcard   pt
+    python3 -m api.compositor CONCHAS poster     en --side front
+    python3 -m api.compositor PLANTAS mini-poster pt
 """
 
 import argparse
 import json
 import math
-import os
 import random
-import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-ROOT      = Path(__file__).resolve().parent
-FONT_PATH = ROOT / "DebruitsRegular-Handwritten.ttf"
+from .paths import CFG_PATH, FINAL_DIR, FONTS_DIR, TMPL_DIR
+from .utils import auto_split_title
 
-# ── Config (read from config.json, with hardcoded defaults as fallback) ────────
+FONT_PATH = FONTS_DIR / "DebruitsRegular-Handwritten.ttf"
+
+# ── Config ─────────────────────────────────────────────────────────────────────
 
 _DEFAULT_LAYOUT = {
     "front_margin": 0.020, "front_gap": 0.010,
@@ -36,9 +35,9 @@ _DEFAULT_LAYOUT = {
     "line_width": 2,
 }
 _DEFAULT_FORMATS = {
-    "postcard":   {"size_px": (1240, 1949), "has_back": True},  # 10.5×16.5 cm @ 300 dpi
-    "mini-poster": {"size_px": (1949, 3189), "has_back": True},  # 16.5×27 cm   @ 300 dpi
-    "poster":     {"size_px": (2480, 3602), "has_back": True},  # 21×30.5 cm   @ 300 dpi
+    "postcard":    {"size_px": (1240, 1949), "has_back": True},
+    "mini-poster": {"size_px": (1949, 3189), "has_back": True},
+    "poster":      {"size_px": (2480, 3602), "has_back": True},
 }
 _DEFAULT_TITLES = {
     "ALGAS":    {"pt": "ALGAS DE PERNAMBUCO",    "en": "ALGAE FROM PERNAMBUCO"},
@@ -53,7 +52,7 @@ _DEFAULT_TITLES = {
 
 def _load_cfg():
     try:
-        with open(ROOT / "config.json") as f:
+        with open(CFG_PATH) as f:
             raw = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         raw = {}
@@ -68,33 +67,13 @@ def _load_cfg():
     titles = {}
     for s, langs in raw_titles.items():
         titles[s] = {}
-        for l, v in langs.items():
-            titles[s][l] = v[0] if isinstance(v, list) else v
+        for lang, v in langs.items():
+            titles[s][lang] = v[0] if isinstance(v, list) else v
 
-    data_root = Path(os.environ.get("DATA_ROOT") or raw.get("data_root", ROOT.parent / "data"))
-    final_dir = data_root / "Series"
-    tmpl_dir  = data_root / "Templates"
-    return layout, formats, titles, final_dir, tmpl_dir
+    return layout, formats, titles
 
 
-LAYOUT, FORMATS, SERIES_TITLES, FINAL_DIR, TMPL_DIR = _load_cfg()
-
-
-_GEO_PREP = re.compile(
-    r'\b(DE|DAS|DOS|FROM|VON|VAN|DI|DES|DEL|DEN|DEGLI|DU|DES)\b',
-    re.IGNORECASE,
-)
-
-
-def _split_title_for_print(title: str) -> str:
-    """Insert '\n' before the last geographic preposition when >1 word precedes it."""
-    matches = list(_GEO_PREP.finditer(title))
-    if matches:
-        m = matches[-1]
-        before = title[:m.start()].strip()
-        if len(before.split()) > 1:
-            return before + '\n' + title[m.start():].strip()
-    return title
+LAYOUT, FORMATS, SERIES_TITLES = _load_cfg()
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -122,7 +101,7 @@ def load_font(size_px: int):
 def place_stamp(canvas: Image.Image, W: int, H: int,
                 color=(0, 0, 0, 255), icon_path: str = None, icon_scale: float = 1.0,
                 extra_bottom: float = 0.08) -> None:
-    """Draw icon only — no DE BRUITS text.
+    """Draw icon stamp in bottom-right corner.
     extra_bottom: fraction of H kept clear below the icon for manual stamping."""
     if not icon_path:
         return
@@ -142,7 +121,8 @@ def place_stamp(canvas: Image.Image, W: int, H: int,
 
 # ── Builders ───────────────────────────────────────────────────────────────────
 
-def build_front(series: str, size_px: tuple, icon_path: str = None, icon_scale: float = 1.0) -> Image.Image:
+def build_front(series: str, size_px: tuple, icon_path: str = None,
+                icon_scale: float = 1.0) -> Image.Image:
     W, H = size_px
     L    = LAYOUT
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
@@ -164,7 +144,6 @@ def build_front(series: str, size_px: tuple, icon_path: str = None, icon_scale: 
             col = idx % n_cols
             cx  = m + col * (cell_w + gap)
             cy  = m + row * (cell_h + gap)
-
             img   = Image.open(path).convert("RGBA")
             scale = min(cell_w / img.width, cell_h / img.height)
             nw    = max(1, round(img.width  * scale))
@@ -177,14 +156,15 @@ def build_front(series: str, size_px: tuple, icon_path: str = None, icon_scale: 
     return canvas
 
 
-def build_front_scattered(series: str, size_px: tuple, count: int, icon_path: str = None, icon_scale: float = 1.0, forced_path: str = None):
-    """Returns (image, layout) where layout is [{path, x, y, w, h}, ...]."""
-    W, H   = size_px
-    L      = LAYOUT
-    canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
+def build_front_scattered(series: str, size_px: tuple, count: int,
+                          icon_path: str = None, icon_scale: float = 1.0,
+                          forced_path: str = None):
+    """Return (image, layout) where layout is [{path, x, y, w, h}, ...]."""
+    W, H     = size_px
+    L        = LAYOUT
+    canvas   = Image.new("RGBA", (W, H), (255, 255, 255, 255))
     all_imgs = collect_images(series)
 
-    # Pre-compute stamp bounding box so images never overlap it
     _base = round(L["stamp_size"] * W)
     _sz   = round(_base * icon_scale) if icon_path else _base
     _sx1  = W - round(L["stamp_right"]  * W)
@@ -201,6 +181,7 @@ def build_front_scattered(series: str, size_px: tuple, count: int, icon_path: st
     else:
         selected = random.sample(all_imgs, min(count, len(all_imgs)))
         random.shuffle(selected)
+
     n      = len(selected)
     n_cols = math.ceil(math.sqrt(n))
     n_rows = math.ceil(n / n_cols)
@@ -225,15 +206,13 @@ def build_front_scattered(series: str, size_px: tuple, count: int, icon_path: st
         oy       = (cell_h - nh) // 2
         px, py   = cx + ox, cy + oy
 
-        # If this image would overlap the stamp zone, shift it away
         if px < _sx1 and px + nw > _sx0 and py < _sy1 and py + nh > _sy0:
-            shift_l = px + nw - _sx0  # x-axis overlap amount
-            shift_u = py + nh - _sy0  # y-axis overlap amount
+            shift_l = px + nw - _sx0
+            shift_u = py + nh - _sy0
             if shift_l <= shift_u:
                 px = max(cx, px - shift_l)
             else:
                 py = max(cy, py - shift_u)
-            # Edge case: still overlapping — scale down to fit non-stamp area
             if px < _sx1 and px + nw > _sx0 and py < _sy1 and py + nh > _sy0:
                 max_w = max(1, _sx0 - cx)
                 max_h = max(1, _sy0 - cy)
@@ -251,13 +230,9 @@ def build_front_scattered(series: str, size_px: tuple, count: int, icon_path: st
     return canvas, layout
 
 
-def apply_bc(img: Image.Image, brightness: float, contrast: float, bw: bool = False) -> Image.Image:
-    """Apply brightness → contrast → bw matching CSS filter order.
-
-    Accepts RGB or RGBA; alpha is preserved unchanged.
-    Uses separate LUT steps with intermediate clamping so the result
-    is bit-identical to the browser's CSS filter rendering.
-    """
+def apply_bc(img: Image.Image, brightness: float, contrast: float,
+             bw: bool = False) -> Image.Image:
+    """Apply brightness, contrast, B&W in CSS filter order. Preserves alpha."""
     has_alpha = img.mode == "RGBA"
     if has_alpha:
         r, g, b, a = img.split()
@@ -283,7 +258,8 @@ def apply_bc(img: Image.Image, brightness: float, contrast: float, bw: bool = Fa
     return rgb
 
 
-def compose_layout(placements: list, size_px: tuple, icon_path: str = None, icon_scale: float = 1.0) -> Image.Image:
+def compose_layout(placements: list, size_px: tuple, icon_path: str = None,
+                   icon_scale: float = 1.0) -> Image.Image:
     """Re-composite a front image from dragged placements."""
     W, H   = size_px
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
@@ -297,12 +273,10 @@ def compose_layout(placements: list, size_px: tuple, icon_path: str = None, icon
         rot = float(p.get("rot", 0))
         if rot:
             img = img.rotate(-rot, expand=True, resample=Image.BICUBIC)
-        # Center the (possibly rotated) image over the original bounding box center
         cx = int(p["x"]) + int(p["w"]) // 2
         cy = int(p["y"]) + int(p["h"]) // 2
         px = cx - img.width  // 2
         py = cy - img.height // 2
-        # Clip to canvas bounds
         sx = max(0, -px); sy = max(0, -py)
         ex = min(img.width,  W - px)
         ey = min(img.height, H - py)
@@ -313,7 +287,7 @@ def compose_layout(placements: list, size_px: tuple, icon_path: str = None, icon
 
 
 def _wrap_text(text: str, font, max_width: int, draw: ImageDraw.ImageDraw) -> list:
-    """Word-wrap text to fit within max_width. Preserves paragraph breaks."""
+    """Word-wrap preserving paragraph breaks."""
     lines = []
     for paragraph in text.split("\n"):
         words = paragraph.split()
@@ -335,7 +309,8 @@ def _wrap_text(text: str, font, max_width: int, draw: ImageDraw.ImageDraw) -> li
     return lines
 
 
-def build_back(series: str, lang: str, size_px: tuple, title: str = None, footer_text: str = None) -> Image.Image:
+def build_back(series: str, lang: str, size_px: tuple, title: str = None,
+               footer_text: str = None) -> Image.Image:
     W, H = size_px
     L    = LAYOUT
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
@@ -352,9 +327,9 @@ def build_back(series: str, lang: str, size_px: tuple, title: str = None, footer
 
     if title is None:
         title = SERIES_TITLES.get(series.upper(), {}).get(lang, series.upper())
-    title = _split_title_for_print(title)
+    title      = auto_split_title(title)
     title_font = load_font(max(10, round(L["title_size"] * H)))
-    _tdraw = draw.multiline_text if '\n' in title else draw.text
+    _tdraw     = draw.multiline_text if "\n" in title else draw.text
     _tdraw((round(L["title_x"] * W), round(L["title_y"] * H)),
            title, font=title_font, fill=(0, 0, 0, 255),
            stroke_width=2, stroke_fill=(0, 0, 0, 255))
@@ -367,14 +342,8 @@ def build_back(series: str, lang: str, size_px: tuple, title: str = None, footer
         line_h      = round(footer_font_size * 1.4)
         para_gap    = round(footer_font_size * 0.6)
 
-        wrapped = _wrap_text(footer_text, footer_font, max_w, draw)
-
-        # Measure total height
-        total_h = 0
-        for ln in wrapped:
-            total_h += para_gap if ln == "" else line_h
-
-        # Anchor text block to bottom of content area; clamp so it never goes above top margin
+        wrapped    = _wrap_text(footer_text, footer_font, max_w, draw)
+        total_h    = sum(para_gap if ln == "" else line_h for ln in wrapped)
         top_margin = round(L["vline_y0"] * H) + round(0.02 * H)
         bottom_y   = hy - round(0.01 * H)
         ty         = max(top_margin, bottom_y - total_h)
@@ -389,18 +358,12 @@ def build_back(series: str, lang: str, size_px: tuple, title: str = None, footer
     return canvas
 
 
-
-
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def _save(img: Image.Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(path, "PNG", dpi=(600, 600), compress_level=1)
-    try:
-        label = path.relative_to(ROOT)
-    except ValueError:
-        label = path
-    print(f"  → {label}")
+    print(f"  → {path}")
 
 
 def main() -> None:
@@ -409,28 +372,28 @@ def main() -> None:
     ap.add_argument("format",  choices=list(FORMATS))
     ap.add_argument("lang",    choices=["pt", "en"])
     ap.add_argument("--side",  choices=["front", "back"], default="front")
-    ap.add_argument("--count", type=int, default=None, help="Number of images to place (random scatter)")
+    ap.add_argument("--count", type=int, default=None)
     ap.add_argument("--out",   help="Override output directory")
     args = ap.parse_args()
 
-    series  = args.series.upper()
-    fmt_cfg = FORMATS[args.format]
-    size_px = fmt_cfg["size_px"]
-    lang    = args.lang
+    series   = args.series.upper()
+    fmt_cfg  = FORMATS[args.format]
+    size_px  = fmt_cfg["size_px"]
+    lang     = args.lang
     lang_dir = "PORTUGUES" if lang == "pt" else "ENGLISH"
 
-    print(f"\nDE BRUITS — {args.format.upper()} / {lang.upper()} / {series}")
+    print(f"\nDE BRUITS - {args.format.upper()} / {lang.upper()} / {series}")
     print("-" * 50)
 
     out_dir = Path(args.out) if args.out else TMPL_DIR / args.format.upper() / lang_dir
-    for side in [args.side]:
-        if side == "front":
-            img = (build_front_scattered(series, size_px, args.count)[0]
-                   if args.count is not None
-                   else build_front(series, size_px))
-        else:
-            img = build_back(series, lang, size_px)
-        _save(img, out_dir / f"{series}_{side.upper()}.png")
+    side    = args.side
+    if side == "front":
+        img = (build_front_scattered(series, size_px, args.count)[0]
+               if args.count is not None
+               else build_front(series, size_px))
+    else:
+        img = build_back(series, lang, size_px)
+    _save(img, out_dir / f"{series}_{side.upper()}.png")
 
     print("\nDone.")
 

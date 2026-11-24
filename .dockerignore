@@ -2,8 +2,9 @@
 .gitignore
 .claude
 legacy
+webapp
 data/
+dashboard
 **/__pycache__
 **/*.pyc
 **/*.md
-webapp/interests

@@ -386,7 +386,7 @@
                   <span class="cb-name">{{ task_labels.get(key, key) }}</span>
                   <span class="cb-bar"><span style="width: {{ (100 * t.cost / spend.all.cost) if spend.all.cost else 0 }}%"></span></span>
                   <span class="cb-cost">{{ spend.currency }}{{ "%.3f"|format(t.cost) }}</span>
-                  <span class="cb-calls">{{ t.calls }}×</span>
+                  <span class="cb-calls">{{ t.calls }}x</span>
                 </div>
               {% endfor %}
             </div>

@@ -5,9 +5,8 @@ venv/
 venv_*/
 
 # Runtime / generated
-webapp/thumbnails.json
-webapp/interests/.env
-webapp/interests/data/
+src/thumbnails.json
+**/.env
 
 # Large media / generated assets (stored outside repo)
 *.png

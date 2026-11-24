@@ -1,10 +1,12 @@
 services:
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
     restart: unless-stopped
     ports:
       - "5000:5000"
     volumes:
-      - ./data:/data
+      - ../data:/data
     environment:
       - DATA_ROOT=/data
