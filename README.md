@@ -1,83 +1,82 @@
 # DE BRUITS
 
-Art project combining microscopy and macro photography to produce postcards, posters, and zines.
-
-**Author:** Fabio Curi · fcuri91@gmail.com · [architecture →](docs/architecture.md)
+Art project combining microscopy and macro photography to produce postcards, posters, and zines.  
+**Author:** Fabio Curi · fcuri91@gmail.com
 
 ---
 
-## Repository structure
+## Contents
+
+- [Structure](#structure)
+- [Run — Kubernetes](#run--kubernetes)
+- [Run — local](#run--local)
+- [Configuration](#configuration)
+- [Data layout](#data-layout)
+- [API](#api)
+
+---
+
+## Structure
 
 ```
 debruits/
 │
-├── src/                            Flask application
+├── src/
 │   ├── api/
-│   │   ├── __init__.py             App factory (create_app)
-│   │   ├── paths.py                Centralised path constants
-│   │   ├── utils.py                Shared utilities
-│   │   ├── compositor.py           Pillow compositor — layout, back face, stamp
+│   │   ├── __init__.py          App factory (create_app)
+│   │   ├── paths.py             Centralised path constants
+│   │   ├── utils.py             Shared utilities
+│   │   ├── compositor.py        Pillow compositor — layout, back face, stamp
 │   │   └── routes/
-│   │       ├── assets.py           File serving — images, fonts, icons, downloads
-│   │       ├── config.py           /api/config
-│   │       ├── images.py           /api/images, /api/covers, /api/thumbnails
-│   │       ├── prints.py           /api/templates, /api/generate, /api/compose …
-│   │       └── zines.py            /api/zines, /api/zine/create … + PDF imposition
-│   ├── static/
-│   │   ├── index.html
-│   │   ├── app.js
-│   │   └── style.css
-│   ├── fonts/
-│   │   └── DebruitsRegular-Handwritten.ttf
-│   ├── config.json                 Layout, formats, series titles
-│   └── thumbnails.json             Series thumbnails — runtime, gitignored
+│   │       ├── assets.py        File serving
+│   │       ├── config.py        /api/config
+│   │       ├── images.py        /api/images, /api/covers, /api/thumbnails
+│   │       ├── prints.py        /api/templates, /api/generate, /api/compose …
+│   │       └── zines.py         /api/zines, /api/zine/create … + PDF imposition
+│   ├── static/                  index.html · app.js · style.css
+│   ├── fonts/                   DebruitsRegular-Handwritten.ttf
+│   ├── config.json              Layout, formats, series titles
+│   └── thumbnails.json          Series thumbnails (runtime, gitignored)
 │
 ├── infra/
-│   ├── Dockerfile                  Builds image from src/ + icons/
-│   ├── docker-compose.yml          Compose alternative — mounts ./data as /data
-│   ├── Caddyfile                   Reverse-proxy config
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── Caddyfile
 │   └── k8s/
-│       ├── deployment.yaml         hostPath /data, imagePullPolicy Never
-│       └── service.yaml            NodePort 30500
+│       ├── deployment.yaml      hostPath /data, imagePullPolicy Never
+│       └── service.yaml         NodePort 30500
 │
 ├── docs/
-│   └── architecture.md             System diagram and full API reference
+├── data/                        Mounted at /data — gitignored
+│   ├── Series/                  Source images  e.g. Series/ALGAS/
+│   ├── Cover/                   Cover photos   e.g. Cover/ALGAS/
+│   ├── Templates/               Saved print PDFs + sidecars
+│   └── Zines/                   Saved zine PDFs + sidecars
 │
-├── data/                           Working data — mounted at /data, gitignored
-│   ├── Series/                     Source images  e.g. Series/ALGAS/
-│   ├── Cover/                      Cover photos   e.g. Cover/ALGAS/
-│   ├── Templates/                  Saved print PDFs + JSON sidecars
-│   └── Zines/                      Saved zine PDFs + JSON sidecars
-│
-├── icons/                          Stamp icon PNGs — baked into image, gitignored
-├── legacy/                         Archived GAN experiments, Vue prototype, old webapp
-├── pyproject.toml                  Dependencies (uv)
+├── icons/                       Stamp icon PNGs (baked into image, gitignored)
+├── legacy/                      Archived GAN experiments, Vue prototype, old webapp
+├── pyproject.toml
 └── uv.lock
 ```
 
 ---
 
-## Running with Kubernetes
+## Run — Kubernetes
 
-### First run
+**First run**
 
 ```bash
-# 1. Start minikube with the data directory mounted
 minikube start
 minikube mount "$(pwd)/data:/data" &
 
-# 2. Build the image inside minikube's Docker context
 eval $(minikube docker-env)
 docker build -f infra/Dockerfile -t debruits-app:latest .
-
-# 3. Deploy
 kubectl apply -f infra/k8s/
 
-# 4. Open in browser
 minikube service debruits
 ```
 
-### Subsequent runs (after a machine restart)
+**After a restart**
 
 ```bash
 minikube start
@@ -86,7 +85,7 @@ kubectl apply -f infra/k8s/
 minikube service debruits
 ```
 
-### Rebuild after code changes
+**After code changes**
 
 ```bash
 eval $(minikube docker-env)
@@ -94,9 +93,11 @@ docker build -f infra/Dockerfile -t debruits-app:latest .
 kubectl rollout restart deployment/debruits
 ```
 
+> `minikube mount` is required because the Docker driver runs inside a container — `hostPath` volumes are only reachable via the 9p mount.
+
 ---
 
-## Running locally
+## Run — local
 
 ```bash
 uv sync
@@ -105,6 +106,13 @@ DATA_ROOT=../data uv run python -m api
 ```
 
 Open **http://localhost:5000**
+
+**CLI compositor**
+
+```bash
+DATA_ROOT=../data uv run python -m api.compositor ALGAS postcard pt
+DATA_ROOT=../data uv run python -m api.compositor CONCHAS poster en --side back
+```
 
 ---
 
@@ -120,26 +128,51 @@ Edit `src/config.json`:
 | `layout` | Stamp position, margins, line widths |
 | `formats` | Canvas pixel dimensions per format |
 
-`DATA_ROOT` env var controls where the app reads/writes data. The k8s deployment sets it to `/data`; local fallback is `../data` relative to `src/`.
+`DATA_ROOT` env var sets the data directory. k8s sets it to `/data`; local default is `../data` relative to `src/`.
 
 ---
 
 ## Data layout
 
 ```
-data/Series/ALGAS/ALGAS_01_upscaled.png
-data/Series/CONCHAS/CONCHAS_01_upscaled.png
-data/Cover/ALGAS/cover.jpg
+data/
+├── Series/ALGAS/ALGAS_01_upscaled.png   ← source images per series
+├── Cover/ALGAS/cover.jpg                ← cover photos per series
+├── Templates/POSTCARD/PORTUGUES/        ← saved prints (auto-created)
+│   ├── ALGAS.pdf
+│   ├── ALGAS.json                       ← sidecar: layout, icon, lang …
+│   └── ALGAS_thumb.png
+└── Zines/ALGAS_20250101_120000.pdf      ← saved zines (auto-created)
 ```
 
 Stamp icons (PNG with transparency) go under `icons/`.
 
 ---
 
-## CLI compositor
+## API
 
-```bash
-cd src
-DATA_ROOT=../data uv run python -m api.compositor ALGAS postcard pt
-DATA_ROOT=../data uv run python -m api.compositor CONCHAS poster en --side back
-```
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Single-page app |
+| GET | `/img/<path>` | Serve image from DATA_ROOT |
+| GET | `/font/<name>` | Custom TTF font |
+| GET | `/icon/<name>` | Stamp icon PNG |
+| GET/PUT | `/api/config` | Read / update config.json |
+| GET | `/api/images` | List all Series/ source images |
+| GET | `/api/covers/<series>` | List Cover/<series>/ photos |
+| GET | `/api/icons` | List stamp icons |
+| GET/PUT | `/api/thumbnails` | Per-series thumbnail overrides |
+| GET | `/api/templates` | List saved prints |
+| DELETE | `/api/templates` | Delete prints |
+| GET | `/api/layout-data/<path>` | Sidecar JSON for a saved print |
+| POST | `/api/generate` | Preview layout (no disk write) |
+| POST | `/api/compose` | Render + save print PDF |
+| POST | `/api/refresh-prints` | Re-render all prints from sidecars |
+| GET | `/api/download/<path>` | Download one print PDF |
+| GET | `/api/download-all` | Zip all print PDFs |
+| GET | `/api/zines` | List saved zines |
+| POST | `/api/zine/create` | Render + save zine PDF |
+| DELETE | `/api/zines/delete` | Delete zines |
+| POST | `/api/refresh-zines` | Re-render all zines from sidecars |
+| GET | `/api/zines/download/<name>` | Download one zine PDF |
+| GET | `/api/zines/download-all` | Zip all zine PDFs |
