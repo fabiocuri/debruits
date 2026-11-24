@@ -5,6 +5,6 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - /home/fabiocuri/Documents/DE BRUITS:/home/fabiocuri/Documents/DE BRUITS
-      - ./webapp/config.json:/app/webapp/config.json
-      - ./webapp/thumbnails.json:/app/webapp/thumbnails.json
+      - ./data:/data
+    environment:
+      - DATA_ROOT=/data

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-make_template.py — generate DE BRUITS templates from Final/ composite images.
+make_template.py — generate DE BRUITS templates from Series/ composite images.
 
 Layout, format sizes, and text are read from config.json (edited via the UI
 or by hand). Change config.json once — every format updates automatically.
@@ -15,6 +15,7 @@ Usage
 import argparse
 import json
 import math
+import os
 import random
 import re
 from pathlib import Path
@@ -70,8 +71,8 @@ def _load_cfg():
         for l, v in langs.items():
             titles[s][l] = v[0] if isinstance(v, list) else v
 
-    data_root = Path(raw.get("data_root", ROOT.parent.parent))
-    final_dir = data_root / "Final"
+    data_root = Path(os.environ.get("DATA_ROOT") or raw.get("data_root", ROOT.parent / "data"))
+    final_dir = data_root / "Series"
     tmpl_dir  = data_root / "Templates"
     return layout, formats, titles, final_dir, tmpl_dir
 
@@ -119,56 +120,24 @@ def load_font(size_px: int):
 
 
 def place_stamp(canvas: Image.Image, W: int, H: int,
-                color=(0, 0, 0, 255), icon_path: str = None, icon_scale: float = 1.0) -> None:
+                color=(0, 0, 0, 255), icon_path: str = None, icon_scale: float = 1.0,
+                extra_bottom: float = 0.08) -> None:
+    """Draw icon only — no DE BRUITS text.
+    extra_bottom: fraction of H kept clear below the icon for manual stamping."""
+    if not icon_path:
+        return
     L         = LAYOUT
     base_size = round(L["stamp_size"] * W)
     x1        = W - round(L["stamp_right"]  * W)
-    y1        = H - round(L["stamp_bottom"] * H)
-
-    if icon_path:
-        try:
-            size    = round(base_size * icon_scale)
-            x0, y0 = x1 - size, y1 - size
-            icon    = Image.open(icon_path).convert("RGBA")
-            icon    = icon.resize((size, size), Image.LANCZOS)
-            canvas.alpha_composite(icon, (x0, y0))
-            # Draw brand name above icon: "d b u t" / "e r i s"
-            draw      = ImageDraw.Draw(canvas)
-            font      = load_font(max(1, round(size * 0.28)))
-            lines    = ["D B U T", "E R I S"]
-            line_gap = max(2, round(size * 0.10))
-            icon_gap = max(4, round(size * 0.15))
-            bboxes   = [draw.textbbox((0, 0), ln, font=font) for ln in lines]
-            ths      = [b[3] - b[1] for b in bboxes]
-            # Anchor: visual bottom of last line = y0 - icon_gap (accounts for b[1] offset)
-            ty = (y0 - icon_gap - bboxes[-1][3]
-                  - sum(ths[:-1]) - line_gap * (len(lines) - 1))
-            for line, bb in zip(lines, bboxes):
-                tw  = bb[2] - bb[0]
-                th  = bb[3] - bb[1]
-                tx  = x0 + (size - tw) // 2
-                draw.text((tx, ty), line, font=font, fill=color)
-                ty += th + line_gap
-            return
-        except Exception:
-            pass  # fall through to text stamp
-
-    size    = base_size
-    x0, y0 = x1 - size, y1 - size
-
-    draw = ImageDraw.Draw(canvas)
-    draw.rectangle([x0, y0, x1, y1], outline=color, width=2)
-    font   = load_font(round(size * 0.26))
-    lines  = ["DE", "BRUITS"]
-    bboxes = [draw.textbbox((0, 0), ln, font=font) for ln in lines]
-    gap    = 2
-    total  = sum(b[3] - b[1] for b in bboxes) + gap * (len(lines) - 1)
-    ty     = y0 + (size - total) // 2
-    for line, bbox in zip(lines, bboxes):
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
-        draw.text((x0 + (size - tw) // 2, ty), line, font=font, fill=color)
-        ty += th + gap
+    y1        = H - round(L["stamp_bottom"] * H) - round(extra_bottom * H)
+    try:
+        size    = round(base_size * icon_scale)
+        x0, y0 = x1 - size, y1 - size
+        icon    = Image.open(icon_path).convert("RGBA")
+        icon    = icon.resize((size, size), Image.LANCZOS)
+        canvas.alpha_composite(icon, (x0, y0))
+    except Exception:
+        pass
 
 
 # ── Builders ───────────────────────────────────────────────────────────────────
@@ -282,17 +251,36 @@ def build_front_scattered(series: str, size_px: tuple, count: int, icon_path: st
     return canvas, layout
 
 
-def _adjust_image(img: Image.Image, brightness: float, contrast: float, bw: bool) -> Image.Image:
-    from PIL import ImageEnhance
-    if bw:
+def apply_bc(img: Image.Image, brightness: float, contrast: float, bw: bool = False) -> Image.Image:
+    """Apply brightness → contrast → bw matching CSS filter order.
+
+    Accepts RGB or RGBA; alpha is preserved unchanged.
+    Uses separate LUT steps with intermediate clamping so the result
+    is bit-identical to the browser's CSS filter rendering.
+    """
+    has_alpha = img.mode == "RGBA"
+    if has_alpha:
         r, g, b, a = img.split()
-        gray = Image.merge("RGB", (r, g, b)).convert("L")
-        img = Image.merge("RGBA", (gray, gray, gray, a))
+        rgb = Image.merge("RGB", (r, g, b))
+    else:
+        rgb = img.convert("RGB")
+
     if brightness != 100:
-        img = ImageEnhance.Brightness(img).enhance(brightness / 100.0)
+        b_lut = [min(255, round(v * brightness / 100)) for v in range(256)]
+        rgb = rgb.point(b_lut * 3)
+
     if contrast != 100:
-        img = ImageEnhance.Contrast(img).enhance(contrast / 100.0)
-    return img
+        c = contrast / 100.0
+        c_lut = [max(0, min(255, round((v - 128) * c + 128))) for v in range(256)]
+        rgb = rgb.point(c_lut * 3)
+
+    if bw:
+        rgb = rgb.convert("L").convert("RGB")
+
+    if has_alpha:
+        r2, g2, b2 = rgb.split()
+        return Image.merge("RGBA", (r2, g2, b2, a))
+    return rgb
 
 
 def compose_layout(placements: list, size_px: tuple, icon_path: str = None, icon_scale: float = 1.0) -> Image.Image:
@@ -302,10 +290,10 @@ def compose_layout(placements: list, size_px: tuple, icon_path: str = None, icon
     for p in placements:
         img = Image.open(p["path"]).convert("RGBA")
         img = img.resize((int(p["w"]), int(p["h"])), Image.LANCZOS)
-        img = _adjust_image(img,
-                            float(p.get("brightness", 100)),
-                            float(p.get("contrast",   100)),
-                            bool(p.get("bw", False)))
+        img = apply_bc(img,
+                       float(p.get("brightness", 100)),
+                       float(p.get("contrast",   100)),
+                       bool(p.get("bw", False)))
         rot = float(p.get("rot", 0))
         if rot:
             img = img.rotate(-rot, expand=True, resample=Image.BICUBIC)

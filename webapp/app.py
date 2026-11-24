@@ -70,12 +70,16 @@ def _boot_cfg() -> dict:
         return {}
 
 _cfg       = _boot_cfg()
-DATA_ROOT  = Path(os.environ.get("DATA_ROOT") or _cfg.get("data_root", ROOT.parent.parent))
+DATA_ROOT  = Path(os.environ.get("DATA_ROOT") or _cfg.get("data_root", ROOT.parent / "data"))
 TMPL_DIR   = DATA_ROOT / "Templates"
-FINAL_DIR  = DATA_ROOT / "Final"
+FINAL_DIR  = DATA_ROOT / "Series"
 COVER_DIR  = DATA_ROOT / "Cover"
 ICONS_DIR  = ROOT.parent / "icons"
 ZINES_DIR  = DATA_ROOT / "Zines"
+
+# Fraction of page height reserved below the icon for manual rubber stamping.
+# Must match make_template.place_stamp(extra_bottom=...) default.
+STAMP_EXTRA_BOTTOM = 0.08
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="/static")
 
@@ -212,7 +216,14 @@ THUMBS_PATH = ROOT / "thumbnails.json"
 def load_thumbnails() -> dict:
     try:
         with open(THUMBS_PATH) as f:
-            return json.load(f)
+            data = json.load(f)
+        # Migrate stale paths from before the Final→Series rename
+        migrated = {k: v.replace("Final/", "Series/", 1) if v.startswith("Final/") else v
+                    for k, v in data.items()}
+        if migrated != data:
+            with open(THUMBS_PATH, "w") as f:
+                json.dump(migrated, f, indent=2)
+        return migrated
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
@@ -266,6 +277,7 @@ def parse_template(path: Path) -> dict | None:
         "series": series.upper(),
         "lang":   meta.get("lang", "pt"),
         "icon":   meta.get("icon"),
+        "bw":     bool(meta.get("bw", False)),
         "thumb":  str(thumb.relative_to(DATA_ROOT)) if thumb.exists() else None,
         "page":   None,
     }
@@ -344,35 +356,41 @@ def api_generate():
     if not series:
         return jsonify({"ok": False, "error": "series is required"}), 400
 
+    blank_theme = (series == "__BLANK__")
+
     try:
         fmt_cfg = _mt.FORMATS.get(fmt, _mt.FORMATS["postcard"])
         size_px = fmt_cfg["size_px"]
-        if count is None:
-            count = len([p for p in FINAL_DIR.rglob("*.png")
-                         if p.parent.name.upper() == series
-                         or p.stem.split("_")[0].upper() == series])
-        count = max(int(count), 1)
 
-        canvas, layout = _mt.build_front_scattered(
-            series, size_px, count,
-            icon_path=icon_path, icon_scale=icon_scale, forced_path=forced_path,
-        )
+        if blank_theme:
+            layout_out = []
+        else:
+            if count is None:
+                count = len([p for p in FINAL_DIR.rglob("*.png")
+                             if p.parent.name.upper() == series
+                             or p.stem.split("_")[0].upper() == series])
+            count = max(int(count), 1)
 
-        layout_out = []
-        for item in layout:
-            p = Path(item["path"])
-            try:
-                url = str(p.relative_to(DATA_ROOT))
-            except ValueError:
-                url = str(p)
-            layout_out.append({"url": url, "x": item["x"], "y": item["y"],
-                               "w": item["w"], "h": item["h"]})
+            canvas, layout = _mt.build_front_scattered(
+                series, size_px, count,
+                icon_path=icon_path, icon_scale=icon_scale, forced_path=forced_path,
+            )
+
+            layout_out = []
+            for item in layout:
+                p = Path(item["path"])
+                try:
+                    url = str(p.relative_to(DATA_ROOT))
+                except ValueError:
+                    url = str(p)
+                layout_out.append({"url": url, "x": item["x"], "y": item["y"],
+                                   "w": item["w"], "h": item["h"]})
 
         L      = _mt.LAYOUT
         W, H   = size_px
         s_size = round(round(L["stamp_size"] * W) * (icon_scale if icon_name else 1.0))
         s_x1   = W - round(L["stamp_right"]  * W)
-        s_y1   = H - round(L["stamp_bottom"] * H)
+        s_y1   = H - round(L["stamp_bottom"] * H) - round(STAMP_EXTRA_BOTTOM * H)
         stamp  = {"x": s_x1 - s_size, "y": s_y1 - s_size, "size": s_size}
 
         return jsonify({
@@ -404,7 +422,9 @@ def api_compose():
     bw           = bool(data.get("bw", False))
     custom_title = data.get("customTitle") or None
 
-    if not layout or not series:
+    blank_theme = (series == "__BLANK__")
+
+    if not series or (not layout and not blank_theme):
         return jsonify({"ok": False, "error": "layout and series required"}), 400
 
     try:
@@ -415,7 +435,10 @@ def api_compose():
         out_dir   = TMPL_DIR / fmt.upper() / lang_dir
         out_dir.mkdir(parents=True, exist_ok=True)
         icon_stem = icon_name.rsplit(".", 1)[0] if icon_name else None
-        base_name = f"{series}_{icon_stem}" if icon_stem else series
+        if blank_theme:
+            base_name = f"blank_{icon_stem}" if icon_stem else "blank"
+        else:
+            base_name = f"{series}_{icon_stem}" if icon_stem else series
 
         # Generate front
         placements = [
@@ -430,12 +453,14 @@ def api_compose():
         ]
         front_img = _mt.compose_layout(placements, size_px, icon_path=icon_path, icon_scale=icon_scale)
 
-        # Generate back
+        # Generate back — blank theme gets no title
         footer_text = load_cfg().get("back_footer", {}).get(lang)
-        back_img = _mt.build_back(series, lang, size_px, title=custom_title, footer_text=footer_text)
+        back_title  = "" if blank_theme else custom_title
+        back_series = "" if blank_theme else series
+        back_img = _mt.build_back(back_series, lang, size_px, title=back_title, footer_text=footer_text)
 
-        # Save custom title to config
-        if custom_title:
+        # Save custom title to config (not applicable for blank theme)
+        if custom_title and not blank_theme:
             cfg  = normalize_titles(load_cfg())
             opts = cfg.setdefault("series_titles", {}).setdefault(series, {}).setdefault(lang, [])
             if custom_title not in opts:
@@ -467,7 +492,7 @@ def api_compose():
         L      = _mt.LAYOUT
         s_size = round(round(L["stamp_size"] * W) * (icon_scale if icon_name else 1.0))
         s_x1   = W - round(L["stamp_right"]  * W)
-        s_y1   = H - round(L["stamp_bottom"] * H)
+        s_y1   = H - round(L["stamp_bottom"] * H) - round(STAMP_EXTRA_BOTTOM * H)
         stamp  = {"x": s_x1 - s_size, "y": s_y1 - s_size, "size": s_size}
         layout_out = [{"url": item["url"], "x": item["x"], "y": item["y"],
                        "w": item["w"], "h": item["h"], "rot": item.get("rot", 0),
@@ -517,7 +542,8 @@ def api_refresh_prints():
         layout     = sidecar.get("layout", [])
         size_px    = tuple(sidecar.get("size_px",
                            list(_mt.FORMATS.get(fmt, _mt.FORMATS["postcard"])["size_px"])))
-        if not series or not layout:
+        blank_theme = (series == "__BLANK__")
+        if not series or (not layout and not blank_theme):
             continue
         try:
             icon_path  = str(ICONS_DIR / icon_name) if icon_name else None
@@ -530,9 +556,10 @@ def api_refresh_prints():
                            "bw": bw}
                           for it in layout]
             front_img    = _mt.compose_layout(placements, size_px, icon_path=icon_path, icon_scale=icon_scale)
-            title        = series_titles.get(series, {}).get(lang)
+            back_series  = "" if blank_theme else series
+            back_title   = "" if blank_theme else series_titles.get(series, {}).get(lang)
             footer_text  = back_footers.get(lang)
-            back_img     = _mt.build_back(series, lang, size_px, title=title, footer_text=footer_text)
+            back_img     = _mt.build_back(back_series, lang, size_px, title=back_title, footer_text=footer_text)
             W, H         = size_px
             pt_w, pt_h   = W / 300 * 72, H / 300 * 72
             page_fn      = img2pdf.get_layout_fun(pagesize=(pt_w, pt_h), fit=img2pdf.FitMode.exact)
@@ -664,7 +691,19 @@ def api_layout_data(fp):
         return "Forbidden", 403
     if not path.exists():
         return jsonify(None)
-    return jsonify(json.loads(path.read_text()))
+    meta = json.loads(path.read_text())
+    # Always recompute stamp position so it matches the current place_stamp output
+    # regardless of what was stored when the file was originally saved.
+    icon_name  = meta.get("icon")
+    size_px    = meta.get("size_px")
+    if icon_name and size_px and len(size_px) == 2:
+        W, H   = size_px[0], size_px[1]
+        L      = _mt.LAYOUT
+        s_size = round(round(L["stamp_size"] * W) * float(meta.get("iconScale", 1.0)))
+        s_x1   = W - round(L["stamp_right"]  * W)
+        s_y1   = H - round(L["stamp_bottom"] * H) - round(STAMP_EXTRA_BOTTOM * H)
+        meta["stamp"] = {"x": s_x1 - s_size, "y": s_y1 - s_size, "size": s_size}
+    return jsonify(meta)
 
 
 # ── Zine CRUD ──────────────────────────────────────────────────────────────────
@@ -850,6 +889,23 @@ def _fit_and_rotate(img, w, h, rot):
     return cell
 
 
+def _fit_and_rotate_rgba(img_rgba, w, h, rot):
+    """Like _fit_and_rotate but preserves alpha — letterbox and rotation corners stay transparent."""
+    ratio = min(w / img_rgba.width, h / img_rgba.height)
+    fw = max(1, round(img_rgba.width  * ratio))
+    fh = max(1, round(img_rgba.height * ratio))
+    resized = img_rgba.resize((fw, fh), Image.LANCZOS)
+    # Re-threshold alpha after resize to avoid semi-transparent fringe from interpolation.
+    r, g, b_ch, a = resized.split()
+    a = a.point(lambda v: 255 if v > 127 else 0)
+    resized = Image.merge("RGBA", (r, g, b_ch, a))
+    cell = Image.new("RGBA", (w, h), (255, 255, 255, 0))  # transparent background
+    cell.paste(resized, ((w - fw) // 2, (h - fh) // 2), mask=a)
+    if rot:
+        cell = cell.rotate(-rot, expand=False, resample=Image.BICUBIC)
+    return cell
+
+
 ZINE_DPI = 300
 # Each PDF page is a two-page spread (2 pages side by side).
 # mini-poster pages are A5 → spread = A4 landscape (297 × 210 mm)
@@ -912,6 +968,9 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
         if raw.mode in ("RGBA", "LA", "P"):
             rgba = raw.convert("RGBA")
             r, g, b_ch, a = rgba.split()
+            # Snap near-transparent pixels to fully transparent so semi-opaque fringe
+            # pixels don't composite to grey against the white background.
+            a = a.point(lambda v: 255 if v > 127 else 0)
             bg_white = Image.new("RGB", raw.size, (255, 255, 255))
             bg_white.paste(Image.merge("RGB", (r, g, b_ch)), mask=a)
             return bg_white
@@ -922,8 +981,11 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
         path_str = sub_item.get("path")
         if not path_str:
             return
+        bval  = float(sub_item.get("brightness", 100))
+        cval  = float(sub_item.get("contrast",   100))
+        do_bw = bw or bool(sub_item.get("bw", False))
         try:
-            raw = _load_raw(path_str)
+            raw = Image.open(str((DATA_ROOT / path_str).resolve()))
         except Exception:
             return
         orig_right = (pg % 2 == 1)
@@ -932,18 +994,25 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
         y_a = max(0, round(sub_item["y"] * scale))
         w_a = max(1, round(sub_item["w"] * scale))
         h_a = max(1, round(sub_item["h"] * scale))
-        fitted = _fit_and_rotate(raw, w_a, h_a, float(sub_item.get("rot", 0)))
-        bval = float(sub_item.get("brightness", 100))
-        cval = float(sub_item.get("contrast",   100))
-        if bval != 100:
-            fitted = ImageEnhance.Brightness(fitted).enhance(bval / 100.0)
-        if cval != 100:
-            arr = np.array(fitted, dtype=np.float32)
-            arr = (arr - 128.0) * (cval / 100.0) + 128.0
-            fitted = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
-        if bw or bool(sub_item.get("bw", False)):
-            fitted = fitted.convert("L").convert("RGB")
-        spread.paste(fitted, (x_a, y_a))
+        rot = float(sub_item.get("rot", 0))
+        # Apply adjustments to image content BEFORE compositing onto white so that
+        # transparent areas and the _fit_and_rotate letterbox always stay pure white.
+        # For RGBA images, keep transparency through the fit so overlapping images
+        # paste only their content pixels (not the transparent letterbox areas).
+        if raw.mode in ("RGBA", "LA", "P"):
+            rgba = raw.convert("RGBA")
+            r, g, b_ch, a = rgba.split()
+            a = a.point(lambda v: 255 if v > 127 else 0)
+            content = _mt.apply_bc(Image.merge("RGB", (r, g, b_ch)), bval, cval, do_bw)
+            cr, cg, cb = content.split()
+            content_rgba = Image.merge("RGBA", (cr, cg, cb, a))
+            fitted_rgba = _fit_and_rotate_rgba(content_rgba, w_a, h_a, rot)
+            fr, fg, fb, fa = fitted_rgba.split()
+            spread.paste(Image.merge("RGB", (fr, fg, fb)), (x_a, y_a), mask=fa)
+        else:
+            composite = _mt.apply_bc(raw.convert("RGB"), bval, cval, do_bw)
+            fitted = _fit_and_rotate(composite, w_a, h_a, rot)
+            spread.paste(fitted, (x_a, y_a))
 
     writer      = PdfWriter()
     thumb_bytes = None
@@ -1035,7 +1104,7 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
                 # Centered — handle multiline titles by centering each line
                 is_title = (si == 0 and sid == 'left')
                 stroke   = max(1, round(scale * 0.3)) if is_title else 0
-                if is_title:
+                if is_title and '\n' not in txt:
                     txt = _auto_split_title(txt)
                 lines_txt = txt.split('\n')
                 try:
@@ -1077,7 +1146,7 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
                 x_off    = spread_w // 2 if stamp_side == 'right' else 0
                 half_img = spread.crop((x_off, 0, x_off + spread_w // 2, spread_h)).convert("RGBA")
                 _mt.place_stamp(half_img, spread_w // 2, spread_h,
-                                icon_path=icon_path, icon_scale=2.0)
+                                icon_path=icon_path, icon_scale=2.0, extra_bottom=STAMP_EXTRA_BOTTOM)
                 spread.paste(half_img.convert("RGB"), (x_off, 0))
 
         # Thumbnail: right half of first PDF page = reading page 1 (front cover)
@@ -1110,16 +1179,10 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt='mini-p
                             t_img = t_img.rotate(-t_rot, expand=False,
                                                  resample=Image.BICUBIC,
                                                  fillcolor=(255, 255, 255))
-                        t_bv = float(t_src.get("brightness", 100))
-                        t_cv = float(t_src.get("contrast",   100))
-                        if t_bv != 100:
-                            t_img = ImageEnhance.Brightness(t_img).enhance(t_bv / 100.0)
-                        if t_cv != 100:
-                            t_arr = np.array(t_img, dtype=np.float32)
-                            t_arr = (t_arr - 128.0) * (t_cv / 100.0) + 128.0
-                            t_img = Image.fromarray(np.clip(t_arr, 0, 255).astype(np.uint8))
-                        if bw or bool(t_src.get("bw", False)):
-                            t_img = t_img.convert("L").convert("RGB")
+                        t_bv  = float(t_src.get("brightness", 100))
+                        t_cv  = float(t_src.get("contrast",   100))
+                        t_bw  = bw or bool(t_src.get("bw", False))
+                        t_img = _mt.apply_bc(t_img, t_bv, t_cv, t_bw)
                         page1_thumb.paste(t_img, (t_x + (t_w - t_fw) // 2,
                                                    t_y + (t_h - t_fh) // 2))
                     except Exception:

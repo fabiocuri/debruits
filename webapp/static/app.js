@@ -37,6 +37,7 @@ const S = {
   czineSize:         null,
   czineSpread:       0,
   czineActivePgIdx:  null,
+  czineActiveSubIdx: null,
   czineBw:           false,
   czineIcon:         null,
   czineCoverPath:    null,
@@ -196,7 +197,7 @@ function buildIconPills() {
 function buildSeriesPills(series) {
   const c = document.getElementById('pills-series');
   c.innerHTML = `<button class="pill active" data-filter="series" data-val="">All</button>` +
-    series.map(s => `<button class="pill" data-filter="series" data-val="${s}">${s}</button>`).join('');
+    series.map(s => `<button class="pill" data-filter="series" data-val="${s}">${s === '__BLANK__' ? 'No theme' : s}</button>`).join('');
   c.querySelectorAll('.pill').forEach(wireFilterPill);
 }
 
@@ -268,7 +269,7 @@ function renderPrints() {
 }
 
 function printCard(t) {
-  const thumbSrc = t.thumb ? `/img/${t.thumb}` : `/img/${t.path}`;
+  const thumbSrc = t.thumb ? `/img/${t.thumb}?v=${t.modified||''}` : `/img/${t.path}`;
   const checked  = S.selected.has(t.path) ? 'checked' : '';
   const langBadge = t.lang ? `<span class="badge ${t.lang}">${t.lang.toUpperCase()}</span>` : '';
 
@@ -281,7 +282,7 @@ function printCard(t) {
       <a class="act-btn act-dl" href="/api/download/${t.path}">PDF</a>
     </div>
     <div class="card-info">
-      <div class="card-series">${t.series??'—'}</div>
+      <div class="card-series">${t.series === '__BLANK__' ? 'No theme' : (t.series??'—')}</div>
       <div class="badges">
         <span class="badge ${t.format??''}">${t.format??''}</span>
         ${langBadge}
@@ -308,7 +309,7 @@ function renderImages() {
     if (count) { count.textContent = ''; count.classList.add('hidden'); }
 
     if (!series.length) {
-      grid.innerHTML = '<div class="empty">No images in Final/</div>';
+      grid.innerHTML = '<div class="empty">No images in Series/</div>';
       return;
     }
 
@@ -395,7 +396,8 @@ function closeLb() {
 // ── Generate modal ─────────────────────────────────────────────────────────────
 function buildGenSeries(series) {
   const c = document.getElementById('gen-pills-series');
-  c.innerHTML = series.map((s, i) =>
+  const noTheme = `<button class="pill" data-gen="series" data-val="__BLANK__">No theme</button>`;
+  c.innerHTML = noTheme + series.map((s, i) =>
     `<button class="pill${i===0?' active':''}" data-gen="series" data-val="${s}">${s}</button>`
   ).join('');
   if (series[0]) S.gen.series = series[0];
@@ -456,8 +458,16 @@ function wireGenPill(btn) {
 
     if (key === 'lang') buildBackTextSelect(S.gen.series, btn.dataset.val);
     if (key === 'series') {
-      updateCountRow(btn.dataset.val);
-      buildBackTextSelect(btn.dataset.val, S.gen.lang);
+      const isBlank = btn.dataset.val === '__BLANK__';
+      document.getElementById('gen-back-text-row').classList.toggle('hidden', isBlank);
+      if (isBlank) {
+        S.gen.customTitle = null;
+        document.getElementById('gen-count-row').classList.add('hidden');
+        document.getElementById('gen-image-picker-row').classList.add('hidden');
+      } else {
+        updateCountRow(btn.dataset.val);
+        buildBackTextSelect(btn.dataset.val, S.gen.lang);
+      }
     }
   });
 }
@@ -501,7 +511,7 @@ function setImagePickerVisibility(series) {
     row.classList.remove('hidden');
     buildImagePicker(series);
   } else {
-    S.gen.count = n;
+    S.gen.count = n || null;  // null → server counts; avoids sending 0
     row.classList.add('hidden');
     S.gen.selectedImage = null;
   }
@@ -543,8 +553,12 @@ function openGenModal() {
     });
   }
   if (S.gen.series) {
-    updateCountRow(S.gen.series);
-    buildBackTextSelect(S.gen.series, S.gen.lang);
+    const isBlank = S.gen.series === '__BLANK__';
+    document.getElementById('gen-back-text-row').classList.toggle('hidden', isBlank);
+    if (!isBlank) {
+      updateCountRow(S.gen.series);
+      buildBackTextSelect(S.gen.series, S.gen.lang);
+    }
   }
 }
 
@@ -564,14 +578,24 @@ async function openEditModal(t) {
   S.gen.icon          = null;
   S.gen.iconScale     = 3;
   S.gen.selectedImage = null;
+  S.gen.bw            = !!t.bw;
+  document.getElementById('btn-bw-toggle').classList.toggle('active', S.gen.bw);
 
   ['series', 'format', 'lang'].forEach(key => {
     document.querySelectorAll(`[data-gen="${key}"]`).forEach(b =>
       b.classList.toggle('active', b.dataset.val === S.gen[key]));
   });
 
-  updateCountRow(S.gen.series);
-  buildBackTextSelect(S.gen.series, S.gen.lang);
+  if (S.gen.series === '__BLANK__') {
+    document.getElementById('gen-back-text-row').classList.add('hidden');
+    document.getElementById('gen-count-row').classList.add('hidden');
+    document.getElementById('gen-image-picker-row').classList.add('hidden');
+    S.gen.customTitle = null;
+  } else {
+    document.getElementById('gen-back-text-row').classList.remove('hidden');
+    updateCountRow(S.gen.series);
+    buildBackTextSelect(S.gen.series, S.gen.lang);
+  }
 
   const picker = document.getElementById('gen-icon-picker');
   if (picker) selectIcon('', picker, name => { S.gen.icon = name || null; });
@@ -593,8 +617,8 @@ async function openEditModal(t) {
   // Try to restore the saved layout (no new generation, no disk write)
   try {
     const data = await GET(`/api/layout-data/${t.path}`);
-    if (data && data.layout && data.layout.length) {
-      S.layout     = data.layout;
+    if (data && data.layout !== undefined && data.size_px) {
+      S.layout     = data.layout || [];
       S.layoutSize = data.size_px;
       S.stamp      = data.stamp || null;
       if (data.icon) { S.gen.icon = data.icon; S.gen.iconScale = 3; }
@@ -636,22 +660,26 @@ async function runPreview(previewOnly = false) {
 
   try {
     // Snap back-text selection from DOM so stale state never reaches the backend
-    const sel = document.getElementById('gen-back-text-select');
-    const customInput = document.getElementById('gen-back-custom-input');
-    if (sel) {
-      S.gen.customTitle = sel.value === '__custom__'
-        ? (customInput.value.trim() || null)
-        : (sel.value || null);
+    const isBlank = S.gen.series === '__BLANK__';
+    if (!isBlank) {
+      const sel = document.getElementById('gen-back-text-select');
+      const customInput = document.getElementById('gen-back-custom-input');
+      if (sel) {
+        S.gen.customTitle = sel.value === '__custom__'
+          ? (customInput.value.trim() || null)
+          : (sel.value || null);
+      }
     }
     const res = await POST('/api/generate', { ...S.gen, previewOnly });
     const hasContent = res.ok && (res.previewOnly || (res.paths && res.paths.length));
     if (hasContent) {
+      const seriesLabel = isBlank ? 'No theme' : S.gen.series;
       document.getElementById('gen-preview-title').textContent =
-        `${S.gen.series} · ${S.gen.format} · ${S.gen.lang.toUpperCase()}`;
+        `${seriesLabel} · ${S.gen.format} · ${S.gen.lang.toUpperCase()}`;
       log.className = 'gen-log hidden';
 
-      if (res.layout && res.layout.length) {
-        S.layout      = res.layout;
+      if (res.stamp) {
+        S.layout      = res.layout || [];
         S.layoutSize  = res.size_px;
         S.stamp       = res.stamp || null;
         S.previewPath = res.paths[0] || null;
@@ -754,17 +782,6 @@ function renderDraggablePreview() {
     icon.style.height = sz   + 'px';
     wrap.appendChild(icon);
 
-    const fontSize  = Math.round(sz * 0.28);
-    const lineH     = Math.round(fontSize * 1.0);
-    const totalH    = lineH * 2 + 2;
-    const label = document.createElement('div');
-    label.className = 'preview-stamp-label';
-    label.innerHTML = 'D B U T<br>E R I S';
-    label.style.left      = left + 'px';
-    label.style.top       = (top - totalH) + 'px';
-    label.style.width     = sz + 'px';
-    label.style.fontSize  = fontSize + 'px';
-    wrap.appendChild(label);
   }
 }
 
@@ -797,8 +814,9 @@ function refreshAllItemFilters() {
 }
 
 function makeDraggable(box, handle, rotHandle, scale, onClickFn, layoutArr) {
-  const L   = layoutArr != null ? layoutArr : S.layout;
-  const idx = () => parseInt(box.dataset.idx);
+  const L    = layoutArr != null ? layoutArr : S.layout;
+  const idx  = () => parseInt(box.dataset.idx);
+  const getL = () => Array.isArray(L) ? L[idx()] : L;
 
   // Drag to move; click (no movement) → onClickFn
   box.addEventListener('mousedown', e => {
@@ -819,8 +837,8 @@ function makeDraggable(box, handle, rotHandle, scale, onClickFn, layoutArr) {
     const onUp = () => {
       box.style.zIndex = '';
       if (!moved && onClickFn) { onClickFn(); }
-      L[idx()].x = Math.round(parseInt(box.style.left) / scale);
-      L[idx()].y = Math.round(parseInt(box.style.top)  / scale);
+      getL().x = Math.round(parseInt(box.style.left) / scale);
+      getL().y = Math.round(parseInt(box.style.top)  / scale);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup',   onUp);
     };
@@ -850,8 +868,8 @@ function makeDraggable(box, handle, rotHandle, scale, onClickFn, layoutArr) {
     };
     const onUp = () => {
       box.style.zIndex = '';
-      L[idx()].w = Math.round(parseInt(box.style.width)  / scale);
-      L[idx()].h = Math.round(parseInt(box.style.height) / scale);
+      getL().w = Math.round(parseInt(box.style.width)  / scale);
+      getL().h = Math.round(parseInt(box.style.height) / scale);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup',   onUp);
     };
@@ -863,17 +881,16 @@ function makeDraggable(box, handle, rotHandle, scale, onClickFn, layoutArr) {
   rotHandle.addEventListener('mousedown', e => {
     e.preventDefault();
     e.stopPropagation();
-    const i    = idx();
     const rect = box.getBoundingClientRect();
     const cx   = rect.left + rect.width  / 2;
     const cy   = rect.top  + rect.height / 2;
     const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
-    const origRot    = L[i].rot || 0;
+    const origRot    = getL().rot || 0;
 
     const onMove = e => {
       const angle  = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
       const newRot = origRot + (angle - startAngle);
-      L[i].rot      = newRot;
+      getL().rot           = newRot;
       box.style.transform  = `rotate(${newRot}deg)`;
     };
     const onUp = () => {
@@ -1159,9 +1176,10 @@ function openZineEditModal(z) {
   S.czineBw          = !!z.bw;
   S.czineFormat      = z.format || 'mini-poster';
   S.czineLang        = z.lang   || 'pt';
-  S.czineSpread      = 0;
-  S.czineActivePgIdx = null;
-  S.czineGlobalScale = z.globalScale || 100;
+  S.czineSpread       = 0;
+  S.czineActivePgIdx  = null;
+  S.czineActiveSubIdx = null;
+  S.czineGlobalScale  = z.globalScale || 100;
   S.czineM           = z.M || 1;
   const numSpreads   = Math.ceil(S.czineLayout.length / 2);
   const HALF_W = (z.canvasW || 680) / 2;
@@ -1389,6 +1407,7 @@ function closeCzineModal() {
   S.czineCoverScale   = 100;
   document.getElementById('czine-cover-scale-ctrl').classList.add('hidden');
   S.czineActivePgIdx  = null;
+  S.czineActiveSubIdx = null;
   S.czineGlobalScale  = 100;
   S.czineMiscMode     = false;
   S.czineM            = 1;
@@ -1450,7 +1469,7 @@ function buildCzineLayout(imageEntries, P = 1) {
     const absIdx   = layout.length;
     const slotX    = (absIdx % 2) * HALF_W;
     const chunk    = imageEntries.slice(slotIdx * P, (slotIdx + 1) * P);
-    const cellH    = Math.floor(CANVAS_H / chunk.length);
+    const cellH    = Math.floor(CANVAS_H / P);
 
     if (chunk.length === 1) {
       const entry  = chunk[0];
@@ -1531,8 +1550,25 @@ function buildCzineLayout(imageEntries, P = 1) {
 }
 
 function openCzinePreview() {
-  S.czineFormat = document.querySelector('[data-czf].active')?.dataset.czf || 'mini-poster';
-  S.czineLang   = document.querySelector('#czine-pills-lang .pill.active')?.dataset.czl || 'pt';
+  const newFormat = document.querySelector('[data-czf].active')?.dataset.czf || 'mini-poster';
+  const newLang   = document.querySelector('#czine-pills-lang .pill.active')?.dataset.czl || 'pt';
+
+  // Edit mode: layout already exists — just update format/lang and return to step 2.
+  if (S.czineEditName !== null) {
+    if (newFormat !== S.czineFormat) {
+      S.czineFormat = newFormat;
+      const CANVAS_W = S.czineSize.canvasW || 680;
+      const fmt = ZINE_FORMATS[S.czineFormat] || ZINE_FORMATS['mini-poster'];
+      S.czineSize.canvasH = Math.round(CANVAS_W * fmt.paperH / fmt.paperW);
+    }
+    S.czineLang = newLang;
+    showCzineStep(2);
+    renderCzineSpread(S.czineSpread);
+    return;
+  }
+
+  S.czineFormat = newFormat;
+  S.czineLang   = newLang;
 
   let imageEntries, M;
 
@@ -1574,9 +1610,10 @@ function openCzinePreview() {
     S.czineM      = 1;
   }
 
-  S.czineSpread      = 0;
-  S.czineActivePgIdx = null;
-  S.czineGlobalScale = 100;
+  S.czineSpread       = 0;
+  S.czineActivePgIdx  = null;
+  S.czineActiveSubIdx = null;
+  S.czineGlobalScale  = 100;
   buildCzineLayout(imageEntries, M);
 
   document.getElementById('czine-scale-slider').value = 100;
@@ -1609,17 +1646,37 @@ function refreshAllCzineItemFilters() {
 }
 
 function selectCzineItem(absIdx) {
-  S.czineActivePgIdx = absIdx;
+  S.czineActivePgIdx  = absIdx;
+  S.czineActiveSubIdx = null;
   document.querySelectorAll('#czine-spread-canvas .drag-item').forEach(b =>
-    b.classList.toggle('drag-selected', parseInt(b.dataset.idx) === absIdx));
+    b.classList.toggle('drag-selected', parseInt(b.dataset.idx) === absIdx && b.dataset.subIdx === undefined));
   const item = S.czineLayout[absIdx];
-  if (item.images && item.images.length > 1) return;  // no adj bar for multi-image slots
+  if (item.images && item.images.length > 0) return;
   const bar  = document.getElementById('czine-pg-adj-bar');
   bar.classList.remove('hidden');
   const bEl  = document.getElementById('czine-pg-brightness');
   const cEl  = document.getElementById('czine-pg-contrast');
   bEl.value  = item.brightness ?? 100;
   cEl.value  = item.contrast   ?? 100;
+  document.getElementById('czine-pg-brightness-val').textContent = bEl.value;
+  document.getElementById('czine-pg-contrast-val').textContent   = cEl.value;
+}
+
+function selectCzineSubItem(absIdx, si) {
+  S.czineActivePgIdx  = absIdx;
+  S.czineActiveSubIdx = si;
+  document.querySelectorAll('#czine-spread-canvas .drag-item').forEach(b => {
+    const sameSlot = parseInt(b.dataset.idx) === absIdx;
+    const sameSub  = b.dataset.subIdx !== undefined && parseInt(b.dataset.subIdx) === si;
+    b.classList.toggle('drag-selected', sameSlot && sameSub);
+  });
+  const sub = S.czineLayout[absIdx].images[si];
+  const bar = document.getElementById('czine-pg-adj-bar');
+  bar.classList.remove('hidden');
+  const bEl = document.getElementById('czine-pg-brightness');
+  const cEl = document.getElementById('czine-pg-contrast');
+  bEl.value = sub.brightness ?? 100;
+  cEl.value = sub.contrast   ?? 100;
   document.getElementById('czine-pg-brightness-val').textContent = bEl.value;
   document.getElementById('czine-pg-contrast-val').textContent   = cEl.value;
 }
@@ -1631,7 +1688,6 @@ function renderSlotItem(canvas, absIdx) {
   const subList = item.images && item.images.length > 0 ? item.images : null;
 
   if (subList) {
-    // Multi-image slot: render each sub-image; no drag handles (MISC layout)
     subList.forEach((sub, si) => {
       if (!sub.url) return;
       const box = document.createElement('div');
@@ -1648,6 +1704,13 @@ function renderSlotItem(canvas, absIdx) {
       img.draggable = false;
       applyCzineItemFilter(img, sub.brightness ?? 100, sub.contrast ?? 100);
       box.appendChild(img);
+      const handle = document.createElement('div');
+      handle.className = 'resize-handle';
+      box.appendChild(handle);
+      const rotHandle = document.createElement('div');
+      rotHandle.className = 'rotate-handle';
+      box.appendChild(rotHandle);
+      makeDraggable(box, handle, rotHandle, 1, () => selectCzineSubItem(absIdx, si), sub);
       canvas.appendChild(box);
     });
   } else {
@@ -1763,11 +1826,12 @@ function renderCzineSpread(spreadIdx) {
     const STAMP_SIZE_FRAC  = 0.048;
     const STAMP_RIGHT_FRAC = 0.020;
     const STAMP_BOTTOM_FRAC = 0.012;
+    const STAMP_EXTRA_BOTTOM = 0.08;
     const ICON_SCALE       = 2;
     const base = Math.round(STAMP_SIZE_FRAC * HALF_W);
     const sz   = Math.round(base * ICON_SCALE);
     const x0   = Math.round(HALF_W - STAMP_RIGHT_FRAC * HALF_W) - sz;
-    const y0   = Math.round(canvasH - STAMP_BOTTOM_FRAC * canvasH) - sz;
+    const y0   = Math.round(canvasH - STAMP_BOTTOM_FRAC * canvasH - STAMP_EXTRA_BOTTOM * canvasH) - sz;
 
     const stamp = document.createElement('img');
     stamp.src       = `/icon/${S.czineIcon}`;
@@ -1778,24 +1842,14 @@ function renderCzineSpread(spreadIdx) {
     stamp.style.width  = sz + 'px';
     stamp.style.height = sz + 'px';
     canvas.appendChild(stamp);
-
-    const fontSize = Math.round(sz * 0.28);
-    const lineH    = Math.round(fontSize * 1.0);
-    const label    = document.createElement('div');
-    label.className    = 'preview-stamp-label';
-    label.innerHTML    = 'D B U T<br>E R I S';
-    label.style.left   = x0 + 'px';
-    label.style.top    = (y0 - lineH * 2 - 2) + 'px';
-    label.style.width  = sz + 'px';
-    label.style.fontSize = fontSize + 'px';
-    canvas.appendChild(label);
   }
 
   document.getElementById('czine-spread-label').textContent = `Spread ${spreadIdx + 1} / ${totalSpreads}`;
   document.getElementById('czine-prev-spread').disabled = (spreadIdx === 0);
   document.getElementById('czine-next-spread').disabled = (spreadIdx >= totalSpreads - 1);
 
-  S.czineActivePgIdx = null;
+  S.czineActivePgIdx  = null;
+  S.czineActiveSubIdx = null;
   document.getElementById('czine-pg-adj-bar').classList.add('hidden');
 }
 
@@ -2099,6 +2153,20 @@ function init() {
     document.getElementById('czine-misc-row').classList.toggle('hidden', !isMisc);
     document.getElementById('czine-misc-m-row').classList.toggle('hidden', !isMisc);
 
+    // Restore format, lang, M, N pills/inputs from current state
+    document.querySelectorAll('[data-czf]').forEach(b =>
+      b.classList.toggle('active', b.dataset.czf === S.czineFormat));
+    document.querySelectorAll('#czine-pills-lang [data-czl]').forEach(b =>
+      b.classList.toggle('active', b.dataset.czl === S.czineLang));
+    document.getElementById('czine-misc-m-input').value = S.czineM;
+    if (isMisc) {
+      document.querySelectorAll('#czine-misc-n-pills [data-czn]').forEach(b =>
+        b.classList.toggle('active', b.dataset.czn === S.czineMiscN));
+      const nIsNum = S.czineMiscN === 'n';
+      document.getElementById('czine-misc-n-input').classList.toggle('hidden', !nIsNum);
+      if (nIsNum) document.getElementById('czine-misc-n-input').value = S.czineMiscNVal;
+    }
+
     const activateSeries = (czs) => {
       pillsEl.querySelectorAll('[data-czs]').forEach(b => b.classList.remove('active'));
       pillsEl.querySelector(`[data-czs="${czs}"]`)?.classList.add('active');
@@ -2116,6 +2184,7 @@ function init() {
       btn.addEventListener('click', () => activateSeries(btn.dataset.czs));
     });
     if (S.czineSeries && !isMisc) loadCzineImages(S.czineSeries);
+    else if (isMisc) document.getElementById('czine-preview-btn').disabled = false;
   });
   document.getElementById('czine-save-btn').addEventListener('click', saveCzine);
 
@@ -2173,19 +2242,37 @@ function init() {
   // Adj sliders step 2
   document.getElementById('czine-pg-brightness').addEventListener('input', e => {
     if (S.czineActivePgIdx === null) return;
-    S.czineLayout[S.czineActivePgIdx].brightness = parseInt(e.target.value);
+    const val = parseInt(e.target.value);
     document.getElementById('czine-pg-brightness-val').textContent = e.target.value;
-    const box = document.querySelector(`#czine-spread-canvas [data-idx="${S.czineActivePgIdx}"]`);
-    const img = box?.querySelector('img');
-    if (img) applyCzineItemFilter(img, S.czineLayout[S.czineActivePgIdx].brightness, S.czineLayout[S.czineActivePgIdx].contrast);
+    if (S.czineActiveSubIdx !== null) {
+      const sub = S.czineLayout[S.czineActivePgIdx].images[S.czineActiveSubIdx];
+      sub.brightness = val;
+      const box = document.querySelector(`#czine-spread-canvas [data-idx="${S.czineActivePgIdx}"][data-sub-idx="${S.czineActiveSubIdx}"]`);
+      const img = box?.querySelector('img');
+      if (img) applyCzineItemFilter(img, sub.brightness ?? 100, sub.contrast ?? 100);
+    } else {
+      S.czineLayout[S.czineActivePgIdx].brightness = val;
+      const box = document.querySelector(`#czine-spread-canvas [data-idx="${S.czineActivePgIdx}"]:not([data-sub-idx])`);
+      const img = box?.querySelector('img');
+      if (img) applyCzineItemFilter(img, S.czineLayout[S.czineActivePgIdx].brightness, S.czineLayout[S.czineActivePgIdx].contrast);
+    }
   });
   document.getElementById('czine-pg-contrast').addEventListener('input', e => {
     if (S.czineActivePgIdx === null) return;
-    S.czineLayout[S.czineActivePgIdx].contrast = parseInt(e.target.value);
+    const val = parseInt(e.target.value);
     document.getElementById('czine-pg-contrast-val').textContent = e.target.value;
-    const box = document.querySelector(`#czine-spread-canvas [data-idx="${S.czineActivePgIdx}"]`);
-    const img = box?.querySelector('img');
-    if (img) applyCzineItemFilter(img, S.czineLayout[S.czineActivePgIdx].brightness, S.czineLayout[S.czineActivePgIdx].contrast);
+    if (S.czineActiveSubIdx !== null) {
+      const sub = S.czineLayout[S.czineActivePgIdx].images[S.czineActiveSubIdx];
+      sub.contrast = val;
+      const box = document.querySelector(`#czine-spread-canvas [data-idx="${S.czineActivePgIdx}"][data-sub-idx="${S.czineActiveSubIdx}"]`);
+      const img = box?.querySelector('img');
+      if (img) applyCzineItemFilter(img, sub.brightness ?? 100, sub.contrast ?? 100);
+    } else {
+      S.czineLayout[S.czineActivePgIdx].contrast = val;
+      const box = document.querySelector(`#czine-spread-canvas [data-idx="${S.czineActivePgIdx}"]:not([data-sub-idx])`);
+      const img = box?.querySelector('img');
+      if (img) applyCzineItemFilter(img, S.czineLayout[S.czineActivePgIdx].brightness, S.czineLayout[S.czineActivePgIdx].contrast);
+    }
   });
 
   // Text label inputs (czine step 2)
@@ -2292,6 +2379,7 @@ function init() {
   document.getElementById('gen-preview-btn').addEventListener('click', () => runPreview(false));
   document.getElementById('gen-back-btn').addEventListener('click', () => {
     S.layout = null; S.gen.bw = false;
+    document.getElementById('btn-bw-toggle').classList.remove('active');
     resetPrintScale();
     showGenStep(1);
   });
@@ -2337,18 +2425,31 @@ function init() {
     if (img) applyItemFilter(img, S.layout[S.activeItemIdx].brightness, S.layout[S.activeItemIdx].contrast);
   });
   document.getElementById('gen-save-btn').addEventListener('click', async () => {
-    if (S.layout) {
-      try {
-        const res = await POST('/api/compose', { layout: S.layout, ...S.gen });
-        if (res.ok) {
-          S.prints = await GET('/api/templates');
-          refreshPrintSeries();
-          renderPrints();
-          renderText();
-        }
-      } catch (_) {}
+    const btn = document.getElementById('gen-save-btn');
+    const log = document.getElementById('gen-log');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const res = await POST('/api/compose', { layout: S.layout || [], ...S.gen });
+      if (res.ok) {
+        S.prints = await GET('/api/templates');
+        // Reset series filter to All so the new print is always visible
+        S.filter.series = '';
+        document.querySelectorAll('[data-filter="series"]').forEach(b =>
+          b.classList.toggle('active', b.dataset.val === ''));
+        refreshPrintSeries();
+        renderPrints();
+        renderText();
+        closeGenModal();
+      } else {
+        log.className = 'gen-log fail';
+        log.textContent = 'Save failed: ' + (res.error || 'unknown error');
+        btn.disabled = false; btn.textContent = 'Save';
+      }
+    } catch (e) {
+      log.className = 'gen-log fail';
+      log.textContent = 'Save error: ' + e.message;
+      btn.disabled = false; btn.textContent = 'Save';
     }
-    closeGenModal();
   });
   document.getElementById('gen-close-2').addEventListener('click', closeGenModal);
 

@@ -1,39 +1,16 @@
 # DE BRUITS — webapp
 
-Local dashboard for the DE BRUITS project.
+Local dashboard for the DE BRUITS project. See [ARCHITECTURE.md](../ARCHITECTURE.md) for the full system diagram.
 
-## Running with Docker (recommended)
+## Running
 
-From the repo root:
+The primary way to run the app is via Kubernetes — see the [root README](../README.md).
 
-```bash
-docker compose up --build -d
-```
-
-Open **http://localhost:5000**. Logs:
+For local development without k8s:
 
 ```bash
-docker compose logs -f
-```
-
-Stop:
-
-```bash
-docker compose down
-```
-
-## Running without Docker
-
-Python 3.10+. Install dependencies:
-
-```bash
-pip install flask pillow img2pdf pypdf gunicorn
-```
-
-Then from `webapp/`:
-
-```bash
-python3 app.py
+cd webapp
+DATA_ROOT=../data python3 app.py
 ```
 
 Open **http://localhost:5000**
@@ -46,12 +23,13 @@ Open **http://localhost:5000**
 
 | Key | Description |
 |-----|-------------|
-| `data_root` | Absolute path to the DE BRUITS working directory (where `Templates/`, `Final/`, and `Zines/` live) |
-| `layout` | Template layout parameters (margins, stamp position, etc.) |
-| `formats` | Canvas sizes per format |
+| `layout` | Template layout parameters (margins, stamp position, line widths) |
+| `formats` | Canvas sizes per format (overrides hardcoded defaults) |
 | `series_titles` | Display titles per series per language |
 | `back_footer` | Per-language text for the back of prints |
 | `back_description` | Per-language description text for the back of zines |
+
+The data directory is controlled by the `DATA_ROOT` environment variable (not `config.json`). The k8s deployment sets it to `/data`; the local fallback is `../data` relative to `webapp/`.
 
 ---
 
@@ -102,26 +80,30 @@ GSM reference tables for each format (Postcard / Mini Poster / Poster).
 
 ```
 webapp/
-├── app.py                     Flask server
-├── make_template.py           Template generator (Pillow)
-├── config.json                Layout, formats, series titles, paths
-├── DebruitsRegular-Handwritten.ttf  Custom typeface (all text rendering)
+├── app.py                     Flask server + all API routes
+├── make_template.py           Pillow compositor (layout, back, stamp)
+├── config.json                Layout params, format sizes, series titles
+├── DebruitsRegular-Handwritten.ttf  Custom typeface
+├── DebruitsRegular-Handwritten.sfd  FontForge source for the typeface
 ├── thumbnails.json            Per-theme cover image overrides
+├── build_font.sh              Rebuild TTF from SFD
 ├── static/
 │   ├── index.html
 │   ├── style.css
 │   └── app.js
-└── interests/                 (unused legacy directory)
+└── interests/                 Optional standalone FastAPI dashboard (port 5001)
+    ├── app/                   Claude API, Gmail, Calendar, GitHub, Spotify clients
+    └── templates/index.html
 ```
 
 ---
 
 ## Formats
 
-| Format | Page size | Spread (PDF) | Canvas px |
-|--------|-----------|--------------|-----------|
-| Postcard | 10.5 × 16.5 cm | — | 1240 × 1949 |
-| Mini Poster | 16.5 × 27 cm | A4 landscape | 680 × 382 (preview) |
-| Poster | 21 × 30.5 cm | A3 landscape | 680 × 484 (preview) |
+| Format | Page size | Canvas px (300 dpi) | Paper fit |
+|--------|-----------|---------------------|-----------|
+| Postcard | 10.5 x 16.5 cm | 2480 x 3898 | 10 x 15 cm standard |
+| Mini Poster | 16.5 x 27 cm | 3898 x 6378 | A5 - 14.8 x 21 cm |
+| Poster | 21 x 30.5 cm | 4961 x 7205 | A4 - 21 x 29.7 cm |
 
-Zine spreads are rendered at 300 dpi and saved as booklet-imposed PDFs (print → fold).
+Zine spreads are imposed into booklet-order PDFs (print → fold in half).

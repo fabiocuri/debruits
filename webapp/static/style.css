@@ -841,6 +841,21 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 .paper-panel { padding: 16px 0; }
 .paper-panel.active { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
 
+.paper-map-table {
+  flex-basis: 100%; width: 100%;
+  border-collapse: collapse; margin-bottom: 8px;
+}
+.paper-map-table th {
+  text-align: left; font-size: 18px; letter-spacing: .06em;
+  color: var(--txt3); padding: 6px 16px 6px 8px;
+  border-bottom: 2px solid var(--border);
+}
+.paper-map-table td {
+  font-size: 20px; padding: 4px 16px 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.paper-map-note { font-size: 16px; color: var(--txt3); }
+
 .paper-table { border-collapse: collapse; }
 .paper-table th {
   text-align: right; font-size: 22px; letter-spacing: .08em;
