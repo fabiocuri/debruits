@@ -81,14 +81,8 @@ LAYOUT, FORMATS, SERIES_TITLES = _load_cfg()
 def collect_images(series: str) -> list:
     series_dir = FINAL_DIR / series.upper()
     if series_dir.is_dir():
-        paths = sorted(series_dir.glob("*_upscaled.png"))
-        if not paths:
-            paths = sorted(series_dir.glob("*.png"))
-    else:
-        paths = sorted(FINAL_DIR.glob(f"{series.upper()}_*_upscaled.png"))
-        if not paths:
-            paths = sorted(FINAL_DIR.glob(f"{series.upper()}_*.png"))
-    return paths
+        return sorted(series_dir.glob("*.png"))
+    return sorted(FINAL_DIR.glob(f"{series.upper()}_*.png"))
 
 
 def load_font(size_px: int):

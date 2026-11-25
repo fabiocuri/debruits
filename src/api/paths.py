@@ -22,7 +22,7 @@ DATA_ROOT = Path(os.environ.get("DATA_ROOT", str(PROJECT_ROOT / "data")))
 # config.json lives in DATA_ROOT; _CFG_SEED is the default shipped inside the image
 _CFG_SEED = SRC_DIR / "config.json"
 CFG_PATH  = DATA_ROOT / "config.json"
-ICONS_DIR = DATA_ROOT / "icons"
+ICONS_DIR = DATA_ROOT / "Icons"
 
 TMPL_DIR  = DATA_ROOT / "Templates"
 FINAL_DIR = DATA_ROOT / "Series"
