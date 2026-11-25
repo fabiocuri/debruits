@@ -73,17 +73,6 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
         imposition.append((total_pages - 2*k + 1, 2*k - 2))
         imposition.append((2*k - 1,               total_pages - 2*k))
 
-    def _load_raw(path_str):
-        raw = Image.open(str((DATA_ROOT / path_str).resolve()))
-        if raw.mode in ("RGBA", "LA", "P"):
-            rgba = raw.convert("RGBA")
-            r, g, b_ch, a = rgba.split()
-            a = a.point(lambda v: 255 if v > 127 else 0)
-            bg = Image.new("RGB", raw.size, (255, 255, 255))
-            bg.paste(Image.merge("RGB", (r, g, b_ch)), mask=a)
-            return bg
-        return raw.convert("RGB")
-
     def _render_sub(sub_item, pg, target_right, spread):
         path_str = sub_item.get("path")
         if not path_str:
@@ -245,37 +234,6 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
             thumb_h     = round(spread_h * thumb_w / (spread_w // 2))
             page1_thumb = spread.crop((spread_w // 2, 0, spread_w, spread_h)).resize(
                 (thumb_w, thumb_h), Image.LANCZOS)
-
-            t_scale = thumb_w / (canvas_w // 2)
-            t_pg    = right_pg
-            if 0 <= t_pg < n:
-                t_item = layout[t_pg]
-                t_src  = (t_item.get("images") or [None])[0] or t_item
-                if t_src.get("path"):
-                    try:
-                        t_raw   = _load_raw(t_src["path"])
-                        t_lx    = t_src["x"] - (half_cw if t_pg % 2 == 1 else 0)
-                        t_x     = round(t_lx  * t_scale)
-                        t_y     = round(t_src["y"] * t_scale)
-                        t_w     = max(1, round(t_src["w"] * t_scale))
-                        t_h     = max(1, round(t_src["h"] * t_scale))
-                        t_ratio = min(t_w / t_raw.width, t_h / t_raw.height)
-                        t_fw    = max(1, round(t_raw.width  * t_ratio))
-                        t_fh    = max(1, round(t_raw.height * t_ratio))
-                        t_img   = t_raw.resize((t_fw, t_fh), Image.LANCZOS)
-                        if float(t_src.get("rot", 0)):
-                            t_img = t_img.rotate(-float(t_src["rot"]), expand=False,
-                                                 resample=Image.BICUBIC,
-                                                 fillcolor=(255, 255, 255))
-                        t_img = _mt.apply_bc(t_img,
-                                             float(t_src.get("brightness", 100)),
-                                             float(t_src.get("contrast",   100)),
-                                             bw or bool(t_src.get("bw", False)))
-                        page1_thumb.paste(t_img, (t_x + (t_w - t_fw) // 2,
-                                                   t_y + (t_h - t_fh) // 2))
-                    except Exception:
-                        pass
-
             tb          = io.BytesIO()
             page1_thumb.save(tb, "PNG", compress_level=6)
             thumb_bytes = tb.getvalue()
