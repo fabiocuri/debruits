@@ -15,11 +15,11 @@ data/
 ├── Templates/
 │   └── POSTCARD/
 │       ├── PORTUGUES/
-│       │   ├── ALGAS_menina1.pdf                  ← saved print
-│       │   ├── ALGAS_menina1.json                 ← sidecar: layout, icon, lang …
-│       │   └── ALGAS_menina1_thumb.png
+│       │   ├── ALGAS_icon.pdf                     ← saved print ({SERIES}_{ICON}.pdf)
+│       │   ├── ALGAS_icon.json                    ← sidecar: layout, icon, lang …
+│       │   └── ALGAS_icon_thumb.png
 │       └── FRANCAIS/
-│           └── PLANTAS_menina1.pdf
+│           └── PLANTAS_icon.pdf
 └── Zines/
     └── FRUTAS_YYYYMMDD_HHMMSS.pdf                 ← saved zine PDF
 ```
