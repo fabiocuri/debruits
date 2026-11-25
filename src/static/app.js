@@ -2110,7 +2110,7 @@ function renderEditPanel() {
     seriesGrid.innerHTML = series.map(s => {
       const imgs      = byS[s];
       const thumbPath = S.thumbnails[s] || imgs[0].path;
-      const hasEdits  = imgs.some(img => S.edits[img.path]);
+      const hasEdits  = imgs.some(img => { const e = S.edits[img.path]; return e && (e.brightness !== 100 || e.contrast !== 100); });
       return `<div class="img-tile edit-series-tile${hasEdits ? ' has-edits' : ''}" data-series="${s}">
         <img src="/img/${thumbPath}" loading="lazy" alt="${s}">
         <div class="img-tile-overlay">
@@ -2183,8 +2183,13 @@ function renderEditPanel() {
         clearTimeout(_editDebounce[path]);
         _editDebounce[path] = setTimeout(async () => {
           try {
-            await PUT('/api/edits', { path, brightness: b, contrast: c });
-            S.edits[path] = { brightness: b, contrast: c };
+            if (b === 100 && c === 100) {
+              await DEL('/api/edits', { path });
+              delete S.edits[path];
+            } else {
+              await PUT('/api/edits', { path, brightness: b, contrast: c });
+              S.edits[path] = { brightness: b, contrast: c };
+            }
           } catch (e) { console.error('Edit save failed:', e); }
         }, 600);
       };
