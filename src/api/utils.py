@@ -81,10 +81,12 @@ def load_thumbnails() -> dict:
     try:
         with open(THUMBS_PATH) as f:
             data = json.load(f)
-        migrated = {
-            k: v.replace("Final/", "Series/", 1) if v.startswith("Final/") else v
-            for k, v in data.items()
-        }
+        migrated = {}
+        for k, v in data.items():
+            v = v.replace("Final/", "Series/", 1)
+            v = v.replace("_upscaled.png", ".png")
+            if (DATA_ROOT / v).exists():
+                migrated[k] = v
         if migrated != data:
             with open(THUMBS_PATH, "w") as f:
                 json.dump(migrated, f, indent=2)
