@@ -323,7 +323,8 @@ def build_back(series: str, lang: str, size_px: tuple, title: str | None = None,
         title = SERIES_TITLES.get(series.upper(), {}).get(lang, series.upper())
     title_font = load_font(max(10, round(L["title_size"] * H)))
     draw.text((round(L["title_x"] * W), round(L["title_y"] * H)),
-              title, font=title_font, fill=(0, 0, 0, 255))
+              title, font=title_font, fill=(0, 0, 0, 255),
+              stroke_width=1, stroke_fill=(0, 0, 0, 255))
 
     if footer_text:
         footer_font_size = max(10, round(L["title_size"] * H * 0.85))
