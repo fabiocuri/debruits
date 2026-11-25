@@ -1,6 +1,6 @@
 # DE BRUITS
 
-Art project combining microscopy and macro photography to produce postcards, posters, and zines.  
+Design tool for producing postcards, posters, and zines.  
 **Author:** Fabio Curi · fcuri91@gmail.com
 
 ---
