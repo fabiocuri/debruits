@@ -20,7 +20,6 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from .paths import CFG_PATH, FINAL_DIR, FONTS_DIR, TMPL_DIR
-from .utils import auto_split_title
 
 FONT_PATH = FONTS_DIR / "DebruitsRegular-Handwritten.ttf"
 
@@ -322,11 +321,9 @@ def build_back(series: str, lang: str, size_px: tuple, title: str | None = None,
 
     if title is None:
         title = SERIES_TITLES.get(series.upper(), {}).get(lang, series.upper())
-    title      = auto_split_title(title)
     title_font = load_font(max(10, round(L["title_size"] * H)))
-    _tdraw     = draw.multiline_text if "\n" in title else draw.text
-    _tdraw((round(L["title_x"] * W), round(L["title_y"] * H)),
-           title, font=title_font, fill=(0, 0, 0, 255))
+    draw.text((round(L["title_x"] * W), round(L["title_y"] * H)),
+              title, font=title_font, fill=(0, 0, 0, 255))
 
     if footer_text:
         footer_font_size = max(10, round(L["title_size"] * H * 0.85))
