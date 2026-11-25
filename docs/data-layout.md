@@ -21,5 +21,5 @@ data/
 │       └── FRANCAIS/
 │           └── PLANTAS_menina1.pdf
 └── Zines/
-    └── FRUTAS_20261125_210201.pdf                 ← saved zine PDF
+    └── FRUTAS_YYYYMMDD_HHMMSS.pdf                 ← saved zine PDF
 ```
