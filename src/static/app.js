@@ -58,9 +58,16 @@ const S = {
 };
 
 // ── API helpers ────────────────────────────────────────────────────────────────
-async function GET(url)       { return (await fetch(url, { cache: 'no-store' })).json(); }
-async function PUT(url, body) { return (await fetch(url, { method:'PUT',  headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })).json(); }
-async function POST(url,body) { return (await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })).json(); }
+function _fetchWithTimeout(url, opts, ms) {
+  const ctl = new AbortController();
+  const tid = setTimeout(() => ctl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctl.signal })
+    .then(r => { clearTimeout(tid); return r; })
+    .catch(e => { clearTimeout(tid); throw e.name === 'AbortError' ? new Error('Request timed out') : e; });
+}
+async function GET(url)       { return (await _fetchWithTimeout(url, { cache: 'no-store' }, 30000)).json(); }
+async function PUT(url, body) { return (await _fetchWithTimeout(url, { method:'PUT',  headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }, 30000)).json(); }
+async function POST(url,body) { return (await _fetchWithTimeout(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }, 120000)).json(); }
 
 // ── Formatting ─────────────────────────────────────────────────────────────────
 function fmtBytes(b) {
