@@ -19,6 +19,7 @@ from ..utils import (
     fit_and_rotate_rgba,
     flatten_titles,
     load_cfg,
+    load_edits,
 )
 
 bp = Blueprint("zines", __name__)
@@ -59,8 +60,9 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
         desc_font = text_font
         num_font  = text_font
 
-    n       = len(layout)
-    half_cw = canvas_w // 2
+    n            = len(layout)
+    half_cw      = canvas_w // 2
+    global_edits = load_edits()
 
     total_pages = ((n + 3) // 4) * 4
     n_sheets    = total_pages // 4
@@ -80,6 +82,9 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
         bval  = float(sub_item.get("brightness", 100))
         cval  = float(sub_item.get("contrast",   100))
         do_bw = bw or bool(sub_item.get("bw", False))
+        ge    = global_edits.get(path_str, {})
+        gb    = float(ge.get("brightness", 100))
+        gc    = float(ge.get("contrast",   100))
         try:
             raw = Image.open(str((DATA_ROOT / path_str).resolve()))
         except Exception:
@@ -95,13 +100,19 @@ def _make_zine_pdf(layout, canvas_w, canvas_h, bw=False, texts=None, fmt="mini-p
             rgba = raw.convert("RGBA")
             r, g, b_ch, a = rgba.split()
             a = a.point(lambda v: 255 if v > 127 else 0)
-            content = _mt.apply_bc(Image.merge("RGB", (r, g, b_ch)), bval, cval, do_bw)
+            rgb = Image.merge("RGB", (r, g, b_ch))
+            if gb != 100 or gc != 100:
+                rgb = _mt.apply_bc(rgb, gb, gc)
+            content = _mt.apply_bc(rgb, bval, cval, do_bw)
             cr, cg, cb = content.split()
             fitted = fit_and_rotate_rgba(Image.merge("RGBA", (cr, cg, cb, a)), w_a, h_a, rot)
             fr, fg, fb, fa = fitted.split()
             spread.paste(Image.merge("RGB", (fr, fg, fb)), (x_a, y_a), mask=fa)
         else:
-            spread.paste(fit_and_rotate(_mt.apply_bc(raw.convert("RGB"), bval, cval, do_bw),
+            rgb = raw.convert("RGB")
+            if gb != 100 or gc != 100:
+                rgb = _mt.apply_bc(rgb, gb, gc)
+            spread.paste(fit_and_rotate(_mt.apply_bc(rgb, bval, cval, do_bw),
                                         w_a, h_a, rot), (x_a, y_a))
 
     writer      = PdfWriter()

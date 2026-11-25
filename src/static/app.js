@@ -50,6 +50,8 @@ const S = {
   czineMiscNVal:     5,
   czineM:            1,
   printGlobalScale:  100,
+  edits:             {},
+  editSeries:        null,
   layout:            null,
   layoutSize:        null,
   stamp:             null,
@@ -88,6 +90,7 @@ async function boot() {
   S.images    = images;
   S.config    = config;
   try { S.thumbnails = await GET('/api/thumbnails'); } catch (_) { S.thumbnails = {}; }
+  try { S.edits      = await GET('/api/edits');      } catch (_) { S.edits = {}; }
 
   const imageSeries = [...new Set(images.map(i => i.series).filter(Boolean))].sort();
   buildGenSeries(imageSeries);
@@ -1031,8 +1034,10 @@ function activateTab(tabId) {
   S.tab = tabId;
   S.imagesSeries = null;
   S.zinesImageSeries = null;
+  S.editSeries = null;
   S.zinesImageSelected.clear();
   if (tabId === 'zines') renderZines();
+  if (tabId === 'edit')  renderEditPanel();
 }
 
 function setupTabs() {
@@ -2070,6 +2075,135 @@ function showHome() {
   document.getElementById('panel-home').classList.add('active');
   S.imagesSeries = null;
   renderImages();
+}
+
+// ── Edit section ───────────────────────────────────────────────────────────────
+
+const _editDebounce = {};
+
+async function DEL(url, body) {
+  return (await _fetchWithTimeout(url, { method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }, 30000)).json();
+}
+
+function renderEditPanel() {
+  const seriesGrid = document.getElementById('edit-series-grid');
+  const imageGrid  = document.getElementById('edit-image-grid');
+  const countBar   = document.getElementById('count-edit');
+
+  if (S.editSeries === null) {
+    imageGrid.classList.add('hidden');
+    seriesGrid.classList.remove('hidden');
+    if (countBar) { countBar.textContent = ''; countBar.classList.add('hidden'); }
+
+    const byS = {};
+    S.images.forEach(img => {
+      if (!byS[img.series]) byS[img.series] = [];
+      byS[img.series].push(img);
+    });
+    const series = Object.keys(byS).sort();
+
+    if (!series.length) {
+      seriesGrid.innerHTML = '<div class="empty">No images in Series/</div>';
+      return;
+    }
+
+    seriesGrid.innerHTML = series.map(s => {
+      const imgs      = byS[s];
+      const thumbPath = S.thumbnails[s] || imgs[0].path;
+      const hasEdits  = imgs.some(img => S.edits[img.path]);
+      return `<div class="img-tile edit-series-tile${hasEdits ? ' has-edits' : ''}" data-series="${s}">
+        <img src="/img/${thumbPath}" loading="lazy" alt="${s}">
+        <div class="img-tile-overlay">
+          <div class="img-tile-name">${s}</div>
+          ${hasEdits ? '<div class="edit-badge">Edited</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    seriesGrid.querySelectorAll('.edit-series-tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        S.editSeries = tile.dataset.series;
+        renderEditPanel();
+      });
+    });
+
+  } else {
+    seriesGrid.classList.add('hidden');
+    imageGrid.classList.remove('hidden');
+
+    const items = S.images.filter(i => i.series === S.editSeries).sort((a, b) => a.index - b.index);
+
+    if (countBar) {
+      countBar.innerHTML = `<button class="back-btn" id="edit-back">Back</button> <span>${S.editSeries} — ${items.length} ${items.length === 1 ? 'image' : 'images'}</span>`;
+      countBar.classList.remove('hidden');
+      document.getElementById('edit-back').addEventListener('click', () => {
+        S.editSeries = null;
+        renderEditPanel();
+      });
+    }
+
+    imageGrid.innerHTML = items.map(img => {
+      const e = S.edits[img.path] || {};
+      const b = e.brightness ?? 100;
+      const c = e.contrast   ?? 100;
+      const isEdited = b !== 100 || c !== 100;
+      return `<div class="edit-card" data-path="${img.path}">
+        <img class="edit-card-img" src="/img/${img.path}" loading="lazy" alt="${img.filename}">
+        <div class="edit-card-controls">
+          <div class="edit-ctrl-row">
+            <span class="edit-ctrl-label">B</span>
+            <input type="range" class="adj-slider edit-b-slider" min="0" max="300" value="${b}" data-path="${img.path}">
+            <span class="edit-ctrl-val edit-b-val">${b}</span>
+          </div>
+          <div class="edit-ctrl-row">
+            <span class="edit-ctrl-label">C</span>
+            <input type="range" class="adj-slider edit-c-slider" min="0" max="300" value="${c}" data-path="${img.path}">
+            <span class="edit-ctrl-val edit-c-val">${c}</span>
+          </div>
+          <button class="btn-secondary edit-reset-btn${isEdited ? '' : ' hidden'}" data-path="${img.path}">Reset</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    imageGrid.querySelectorAll('.edit-card').forEach(card => {
+      const path    = card.dataset.path;
+      const bSlider = card.querySelector('.edit-b-slider');
+      const cSlider = card.querySelector('.edit-c-slider');
+      const bVal    = card.querySelector('.edit-b-val');
+      const cVal    = card.querySelector('.edit-c-val');
+      const resetBtn = card.querySelector('.edit-reset-btn');
+
+      const onSliderChange = () => {
+        const b = parseFloat(bSlider.value);
+        const c = parseFloat(cSlider.value);
+        bVal.textContent = b;
+        cVal.textContent = c;
+        const isEdited = b !== 100 || c !== 100;
+        resetBtn.classList.toggle('hidden', !isEdited);
+        clearTimeout(_editDebounce[path]);
+        _editDebounce[path] = setTimeout(async () => {
+          try {
+            await PUT('/api/edits', { path, brightness: b, contrast: c });
+            S.edits[path] = { brightness: b, contrast: c };
+          } catch (e) { console.error('Edit save failed:', e); }
+        }, 600);
+      };
+
+      bSlider.addEventListener('input', onSliderChange);
+      cSlider.addEventListener('input', onSliderChange);
+
+      resetBtn.addEventListener('click', async () => {
+        clearTimeout(_editDebounce[path]);
+        bSlider.value = 100; cSlider.value = 100;
+        bVal.textContent = 100; cVal.textContent = 100;
+        resetBtn.classList.add('hidden');
+        try {
+          await DEL('/api/edits', { path });
+          delete S.edits[path];
+        } catch (e) { console.error('Edit reset failed:', e); }
+      });
+    });
+  }
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────

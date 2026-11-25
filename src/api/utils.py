@@ -9,7 +9,7 @@ import img2pdf
 from flask import send_file
 from PIL import Image
 
-from .paths import _CFG_SEED, CFG_PATH, DATA_ROOT, SRC_DIR, THUMBS_PATH
+from .paths import _CFG_SEED, CFG_PATH, DATA_ROOT, EDITS_PATH, SRC_DIR, THUMBS_PATH
 
 _LANG_TO_DIR = {"pt": "PORTUGUES", "en": "ENGLISH", "es": "ESPANOL", "fr": "FRANCAIS"}
 _DIR_TO_LANG = {v: k for k, v in _LANG_TO_DIR.items()}
@@ -73,6 +73,22 @@ def flatten_titles(raw_titles: dict) -> dict:
         s: {lang: (v[0] if isinstance(v, list) else v) for lang, v in langs.items()}
         for s, langs in raw_titles.items()
     }
+
+
+# ── Edits ──────────────────────────────────────────────────────────────────────
+
+def load_edits() -> dict:
+    try:
+        with open(EDITS_PATH) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_edits(edits: dict) -> None:
+    EDITS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(EDITS_PATH, "w") as f:
+        json.dump(edits, f, indent=2)
 
 
 # ── Thumbnails ─────────────────────────────────────────────────────────────────

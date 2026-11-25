@@ -10,11 +10,12 @@ def create_app() -> Flask:
 
     from .routes.assets import bp as assets_bp
     from .routes.config import bp as config_bp
+    from .routes.edits import bp as edits_bp
     from .routes.images import bp as images_bp
     from .routes.prints import bp as prints_bp
     from .routes.zines import bp as zines_bp
 
-    for bp in (assets_bp, config_bp, images_bp, prints_bp, zines_bp):
+    for bp in (assets_bp, config_bp, edits_bp, images_bp, prints_bp, zines_bp):
         app.register_blueprint(bp)
 
     @app.route("/")

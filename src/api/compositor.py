@@ -19,7 +19,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .paths import CFG_PATH, FINAL_DIR, FONTS_DIR, TMPL_DIR
+from .paths import CFG_PATH, DATA_ROOT, FINAL_DIR, FONTS_DIR, TMPL_DIR
 
 FONT_PATH = FONTS_DIR / "DebruitsRegular-Handwritten.ttf"
 
@@ -254,11 +254,22 @@ def apply_bc(img: Image.Image, brightness: float, contrast: float,
 def compose_layout(placements: list, size_px: tuple, icon_path: str | None = None,
                    icon_scale: float = 1.0) -> Image.Image:
     """Re-composite a front image from dragged placements."""
+    from .utils import load_edits as _load_global_edits
+    global_edits = _load_global_edits()
     W, H   = size_px
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
     for p in placements:
         img = Image.open(p["path"]).convert("RGBA")
         img = img.resize((int(p["w"]), int(p["h"])), Image.LANCZOS)
+        try:
+            rel = str(Path(p["path"]).relative_to(DATA_ROOT))
+        except ValueError:
+            rel = ""
+        ge = global_edits.get(rel, {})
+        gb = float(ge.get("brightness", 100))
+        gc = float(ge.get("contrast",   100))
+        if gb != 100 or gc != 100:
+            img = apply_bc(img, gb, gc)
         img = apply_bc(img,
                        float(p.get("brightness", 100)),
                        float(p.get("contrast",   100)),
